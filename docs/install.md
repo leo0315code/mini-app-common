@@ -80,7 +80,43 @@ php artisan serve
 
 ---
 
-## 6. 生产部署要点
+## 6. Docker 部署
+
+提供一键容器化启动（PHP-FPM + Nginx + MySQL + Redis）：
+
+```bash
+docker compose up -d --build
+```
+
+- 前台地址：http://localhost:8080 （后台 `/admin`）
+- 首次启动自动生成 `.env` 与 `APP_KEY`，并执行数据库迁移
+- 填充测试数据：`docker compose exec app php artisan db:seed`
+- 查看状态 / 日志 / 停止：
+  ```bash
+  docker compose ps
+  docker compose logs -f app
+  docker compose down          # 加 -v 连同数据卷一并删除
+  ```
+
+### 相关文件
+
+| 文件 | 说明 |
+| --- | --- |
+| `Dockerfile` | 多阶段构建：composer 依赖 → 前端 Vite 构建（Filament 主题）→ PHP 8.3-FPM 运行镜像（含 pdo_mysql / redis / intl / gd / zip 扩展） |
+| `docker-compose.yml` | 4 服务编排：`app`（PHP-FPM）、`nginx`（80）、`mysql`（8.0）、`redis`（7），含健康检查与数据卷 |
+| `docker/nginx/default.conf` | Nginx 站点配置（`public/` 根目录、PHP-FPM 转发、静态资源回退 Laravel） |
+| `docker/entrypoint.sh` | 首次启动初始化：生成 `.env` / `APP_KEY`、清理缓存、`migrate --force` |
+
+### 自定义
+
+- **端口**：`.env` 设置 `APP_PORT`（默认 8080）
+- **数据库**：容器内自动覆盖为 `DB_HOST=mysql`；库名 / 用户 / 密码用 `MYSQL_DATABASE` / `MYSQL_USER` / `MYSQL_PASSWORD` 配置（默认 `mini_app_common` / `mini_app` / `mini_app_secret`，与宿主机 `.env` 的 `DB_*` 隔离）
+- **缓存 / 会话 / 队列**：自动使用 Redis（`CACHE_STORE` / `SESSION_DRIVER` / `QUEUE_CONNECTION=redis`）
+- **微信凭证**：在宿主机 `.env` 填入 `MINI_PROGRAM_APP_ID` / `MINI_PROGRAM_SECRET`，compose 自动注入容器
+
+---
+
+## 7. 生产部署要点
 
 1. **关闭调试**：`.env` 中 `APP_ENV=production`、`APP_DEBUG=false`。
 2. **使用正式数据库**：将 `DB_CONNECTION` 改为 `mysql` 并填好连接信息。
@@ -90,7 +126,7 @@ php artisan serve
 
 ---
 
-## 7. Git 与版本号规范
+## 8. Git 与版本号规范
 
 ### 分支策略
 

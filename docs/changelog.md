@@ -15,6 +15,37 @@
 
 - 更新 `structure.md`：目录树补充 `Pages/Dashboard.php`，第 6 节补充自定义工作台首页与时间范围筛选说明。
 
+### 修复
+
+- 修复 `User.php` 重复 `use Laravel\Sanctum\PersonalAccessToken` 导致的致命错误（Fatal）。
+- 消除 Filament v5 弃用告警：`UserResource` / `TokenResource` 的 `->actions()` 改为 `->recordActions()`，`->bulkActions()` 改为 `->toolbarActions()`。
+- 修复 `UnorderedList` 调用不存在的 `->compact()` 导致的 `/admin` 500（BadMethodCallException）。
+- 为 `RecentUsersTable` 设置中文标题，消除自动生成的英文 "Recent Users Table"。
+
+---
+
+## [v1.4.0] - 2026-08-21
+
+### 新增
+
+- **后台「系统配置」页**：新增 `app/Filament/Pages/SystemConfig.php`，集中维护可后台变更的系统参数（微信小程序 app_id/secret、CORS 来源与预检缓存、Sanctum Token 有效期与前缀、后台品牌名）。采用 Filament v5 页面表单模式（`defaultForm` / `form` / `getFormActions` / `save` / `content` + `Form::make(EmbeddedSchema)`）。
+- **`settings` 键值表与 `Setting` 模型**：新增迁移与 `App\Models\Setting`，提供 `getGroup()`（带默认值合并）/ `setGroup()`（按分组 upsert），`value` 为 JSON（`array` cast）。
+- 保存配置时既持久化到 `settings` 表，又同步到当前请求运行时 `config`（CORS / Token / 品牌名即时生效；未配置项回退各 `config` 文件默认值）。
+- 新增 `tests/Feature/SystemConfigTest.php`（鉴权跳转、管理员可访问、保存写库）覆盖。
+- **「系统配置」归入「系统管理」导航分组**：与「用户管理」「Token 管理」并列，组内排序第 3。
+- **Docker 容器化部署**：新增 `Dockerfile`（多阶段：composer 依赖 → 前端 Vite 构建 → PHP 8.3-FPM，含 pdo_mysql / redis / intl / gd / zip 扩展）、`docker-compose.yml`（app / nginx / mysql / redis 四服务，健康检查 + 数据卷）、`docker/nginx/default.conf`、`docker/entrypoint.sh`（首次启动初始化并迁移）、`.dockerignore`。
+- **品牌与主题美化**：后台品牌名改为「宏图爱」，主色由 Amber 调整为 Emerald（`AdminPanelProvider`）。
+- **默认管理员邮箱**：`DatabaseSeeder` 默认管理员改为 `453507012@qq.com`（密码 `admin123`），`docs/admin.md` 同步。
+- **AGENTS.md**：新增供 OpenCode 会话参考的仓库约定与命令速查。
+
+### 文档
+
+- `structure.md`：补充「系统配置」页与 `Setting` 模型 / `settings` 表说明。
+- `admin.md`：补全功能模块（工作台、Token 管理、系统配置、导航结构、品牌与主题、Docker 访问）。
+- `install.md`：新增「Docker 部署」章节（启动、文件说明、自定义）。
+- `README.md`：新增 Docker 一键启动，测试用例数更新为 26。
+- `changelog.md`：补录 v1.3.1 修复项，新增 v1.4.0。
+
 ---
 
 ## [v1.3.0] - 2026-08-21

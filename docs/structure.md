@@ -62,6 +62,12 @@ mini-app-common/
 │   ├── structure.md
 │   ├── testing.md
 │   └── changelog.md
+├── docker/                               # Docker 部署
+│   ├── nginx/default.conf                # Nginx 站点配置
+│   └── entrypoint.sh                     # 首次启动初始化 + 迁移
+├── Dockerfile                            # 多阶段构建（composer + 前端 + PHP-FPM）
+├── docker-compose.yml                    # app / nginx / mysql / redis 编排
+└── .dockerignore
 ├── public/
 │   ├── index.php                         # 入口
 │   ── .htaccess                         # Apache 伪静态规则
@@ -181,4 +187,16 @@ mini-app-common/
 - **系统管理**：
   - `UserResource`：用户增删改查、性别/小程序用户/已绑定手机/注册时间筛选、手机号一键复制。
   - `TokenResource`：查看与撤销 Sanctum Token（`canCreate()` 关闭，因为 Token 由登录接口签发）。
+  - `SystemConfig`（导航「系统配置」，`app/Filament/Pages/SystemConfig.php`）：集中维护可后台变更的系统参数，落库到 `settings` 表并按分组读取。涵盖：
+    - 微信小程序 `app_id` / `secret`（默认回退 `config('services.mini_program')`）。
+    - 跨域 `CORS_ALLOWED_ORIGINS` / `CORS_MAX_AGE`（逗号分隔来源，运行时 explode 写入 `config('cors')`）。
+    - 安全：`SANCTUM_TOKEN_EXPIRATION`（填 0/空=永久）、`SANCTUM_TOKEN_PREFIX`。
+    - 站点：后台品牌名 `'brandName'`。
+    - 保存时既写入 `settings` 表（持久化），又同步到当前请求运行时 `config`；未配置项回退各 `config` 文件默认值。
 - 访问控制：`User::canAccessPanel()` —— 仅拥有 `email` + `password` 的管理员可登录后台。
+
+### `app/Models/Setting.php` 与 `settings` 表
+- 键值表：`group` + `key` 唯一，单列 `value` 为 JSON（`array` cast）。
+- `Setting::getGroup(string $group, array $defaults)`：读取某分组全部配置，返回 `key => value` 数组，并与 `$defaults` 合并。
+- `Setting::setGroup(string $group, array $data)`：按分组 upsert 配置项（`updateOrCreate`）。
+- 迁移：`database/migrations/2026_08_21_160000_create_settings_table.php`。

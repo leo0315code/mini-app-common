@@ -11,7 +11,7 @@
 - **手机号绑定**：`POST /api/user/phone`，微信新版接口换取并绑定手机号
 - **统一 API 格式**：`{"code": 0, "message": "...", "data": {...}}`，全局异常统一处理
 - **CORS 跨域**：`config/cors.php` + 环境变量，适配小程序 `wx.request`
-- **管理后台**：FilamentPHP v5，`/admin` 提供用户管理、Token 撤销、数据统计仪表盘
+- **管理后台**：FilamentPHP v5，`/admin` 提供用户管理、Token 撤销、数据统计仪表盘、系统配置（品牌「宏图爱」）
 
 详细文档见 [`docs/`](./docs/) 目录：
 
@@ -29,6 +29,8 @@
 
 ## 快速开始
 
+### 本地开发
+
 ```bash
 composer install
 cp .env.example .env && php artisan key:generate
@@ -38,10 +40,18 @@ php artisan db:seed        # 可选：填充管理员 + 测试数据
 php artisan serve         # http://localhost:8000 ，后台 /admin
 ```
 
+### Docker 一键启动
+
+```bash
+docker compose up -d --build
+# 前台 http://localhost:8080 ，后台 http://localhost:8080/admin
+# 首次启动自动迁移；填充数据：docker compose exec app php artisan db:seed
+```
+
 运行测试：
 
 ```bash
-php artisan test          # 23 个用例，覆盖登录 / 用户 / 手机号
+php artisan test          # 26 个用例，覆盖登录 / 用户 / 手机号 / 系统配置
 ```
 
 ## 技术栈

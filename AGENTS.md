@@ -6,9 +6,10 @@ Laravel 13 / PHP 8.3 backend for "one admin backend, plug in any WeChat Mini Pro
 Authoritative (Chinese) docs live in `docs/` — read `docs/auth.md`, `docs/config.md`, `docs/structure.md`, `docs/testing.md` before touching related code.
 
 ## Commands
-- Run all tests: `php artisan test` (23 tests, in-memory SQLite via `phpunit.xml`, no DB/WeChat needed). Single file: `php artisan test tests/Feature/UserTest.php`; single test: `php artisan test --filter=test_login_success`.
+- Run all tests: `php artisan test` (26 tests, in-memory SQLite via `phpunit.xml`, no DB/WeChat needed). Single file: `php artisan test tests/Feature/UserTest.php`; single test: `php artisan test --filter=test_login_success`.
 - `composer test` runs `config:clear` first — do the same after editing config files.
 - Dev server: `php artisan serve` (admin at `/admin`). Frontend assets: `npm run build` (Vite; only needed for Filament admin styling).
+- Docker: `docker compose up -d --build` (app + nginx + mysql + redis, admin at `:8080/admin`). MySQL/Redis connections are overridden in `docker-compose.yml` via `MYSQL_*` vars — do not rely on the host `.env`'s `DB_*`.
 - No lint step in CI; `vendor/bin/pint` is available if you choose to format.
 
 ## Conventions that differ from defaults
