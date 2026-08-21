@@ -81,7 +81,7 @@ class NotificationResource extends Resource
                             ->searchable()
                             ->preload()
                             ->options(fn () => User::query()->pluck('nickname', 'id')->filter()->all())
-                            ->visible(fn (Forms\Get $get) => $get('scope') === 'specified'),
+                            ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => $get('scope') === 'specified'),
                     ])
                     ->collapsible(),
                 Section::make('正文')
@@ -138,6 +138,19 @@ class NotificationResource extends Resource
                     ->label('接收人数')
                     ->counts('recipients')
                     ->sortable(),
+                TextColumn::make('read_rate')
+                    ->label('已读率')
+                    ->state(fn (Notification $record): string => (function () use ($record) {
+                        $total = $record->recipients()->count();
+                        if ($total === 0) {
+                            return '—';
+                        }
+                        $read = $record->recipients()->wherePivot('read', true)->count();
+
+                        return round($read / $total * 100) . '%';
+                    })())
+                    ->badge()
+                    ->color(fn (string $state): string => $state === '—' ? 'gray' : (str_starts_with($state, '100') ? 'success' : 'info')),
                 IconColumn::make('published')
                     ->label('已发布')
                     ->boolean()
@@ -181,6 +194,7 @@ class NotificationResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ])
+            ->recordClasses(fn (Notification $record): ?string => $record->published ? null : 'fi-ta-row-unpublished')
             ->defaultSort('created_at', 'desc');
     }
 

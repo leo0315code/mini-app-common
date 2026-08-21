@@ -78,6 +78,13 @@ class MediaResource extends Resource
                     ->label('分组')
                     ->badge()
                     ->searchable(),
+                TextColumn::make('url')
+                    ->label('链接')
+                    ->limit(40)
+                    ->url(fn (Media $record): ?string => $record->isImage() ? $record->url : null, shouldOpenInNewTab: true)
+                    ->copyable()
+                    ->copyMessage('链接已复制')
+                    ->tooltip(fn (Media $record): string => $record->url),
                 IconColumn::make('mime_type')
                     ->label('类型')
                     ->boolean(fn (string $state): bool => str_starts_with($state, 'image/'))
@@ -101,6 +108,21 @@ class MediaResource extends Resource
                 SelectFilter::make('collection')
                     ->label('分组')
                     ->options(fn () => Media::query()->distinct()->pluck('collection', 'collection')->filter()->all()),
+                SelectFilter::make('kind')
+                    ->label('类型')
+                    ->options([
+                        'image' => '图片',
+                        'document' => '文档',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (blank($data['value'] ?? null)) {
+                            return $query;
+                        }
+
+                        return $data['value'] === 'image'
+                            ? $query->where('mime_type', 'like', 'image/%')
+                            : $query->where('mime_type', 'not like', 'image/%');
+                    }),
             ])
             ->recordActions([
                 EditAction::make(),
@@ -126,5 +148,17 @@ class MediaResource extends Resource
             'create' => Pages\CreateMedia::route('/create'),
             'edit' => Pages\EditMedia::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * 上传时按扩展名自动归类分组（图片/文档/其他）。
+     */
+    public static function mutateFormDataBeforeCreate(array $data): array
+    {
+        if (empty($data['collection'] ?? null)) {
+            $data['collection'] = Media::inferCollectionFromFileName($data['file_name'] ?? '');
+        }
+
+        return $data;
     }
 }

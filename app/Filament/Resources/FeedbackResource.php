@@ -6,6 +6,9 @@ use App\Filament\Resources\FeedbackResource\Pages;
 use App\Models\Feedback;
 use App\Models\User;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
@@ -68,12 +71,24 @@ class FeedbackResource extends Resource
                             Feedback::STATUS_RESOLVED => '已解决',
                             Feedback::STATUS_REJECTED => '已驳回',
                         ])
+                        ->default(Feedback::STATUS_PROCESSING)
                         ->required(),
                     Forms\Components\Textarea::make('handle_note')
                         ->label('处理备注 / 回复内容')
                         ->rows(4)
                         ->helperText('将记录在反馈详情，也可作为对用户回复的内容'),
                 ]),
+            Section::make('处理记录')
+                ->schema([
+                    Forms\Components\TextInput::make('handler.name')
+                        ->label('处理人')
+                        ->disabled()
+                        ->formatStateUsing(fn ($state, $record) => $record->handler?->name ?? '—'),
+                    Forms\Components\TextInput::make('handled_at')
+                        ->label('处理时间')
+                        ->disabled()
+                        ->formatStateUsing(fn ($state) => $state ? $state->format('Y-m-d H:i') : '—'),
+                ])->columns(2),
         ]);
     }
 
@@ -130,6 +145,11 @@ class FeedbackResource extends Resource
                     ->label('处理人')
                     ->formatStateUsing(fn ($state, $record) => $record->handler?->name ?? '—')
                     ->toggleable(),
+                TextColumn::make('handled_at')
+                    ->label('处理时间')
+                    ->dateTime('Y-m-d H:i')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->label('提交时间')
                     ->dateTime('Y-m-d H:i')
@@ -153,6 +173,7 @@ class FeedbackResource extends Resource
                         Feedback::STATUS_REJECTED => '已驳回',
                     ]),
             ])
+            ->filtersFormColumns(2)
             ->recordActions([
                 ViewAction::make(),
                 Action::make('handle')
@@ -186,6 +207,29 @@ class FeedbackResource extends Resource
                             ->send();
                     }),
             ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('batchResolved')
+                        ->label('批量已解决')
+                        ->icon('heroicon-o-check-circle')
+                        ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                            $records->each->update([
+                                'status' => Feedback::STATUS_RESOLVED,
+                                'handled_by' => auth()->id(),
+                                'handled_at' => now(),
+                            ]);
+
+                            Notification::make()
+                                ->success()
+                                ->title('已批量标记 '.count($records).' 条反馈为已解决')
+                                ->send();
+                        }),
+                    DeleteBulkAction::make(),
+                ]),
+            ])
+            ->recordClasses(fn (Feedback $record): ?string => $record->status === Feedback::STATUS_PENDING ? 'fi-ta-row-pending' : null)
             ->defaultSort('created_at', 'desc');
     }
 

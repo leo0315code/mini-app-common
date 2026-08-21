@@ -7,3 +7,13 @@
 .fi-fo-rich-editor .fi-fo-rich-editor-main .fi-fo-rich-editor-content {
     min-height: 28rem;
 }
+
+/* 反馈列表：待处理行高亮，便于一眼定位 */
+.fi-ta-row-pending > td {
+    background-color: rgb(254 243 199 / 0.5); /* amber-50，暗色下也可见 */
+}
+
+/* 通知列表：未发布（用户端不可见）行淡化 */
+.fi-ta-row-unpublished > td {
+    opacity: 0.55;
+}

@@ -24,10 +24,11 @@ class CreateMedia extends CreateRecord
 
         $record = new Media();
         if ($path) {
+            $fileName = basename($path);
             $record->fill([
                 'user_id' => auth()->id(),
-                'collection' => 'default',
-                'file_name' => basename($path),
+                'collection' => Media::inferCollectionFromFileName($fileName),
+                'file_name' => $fileName,
                 'path' => $path,
                 'disk' => 'public',
                 'mime_type' => Storage::disk('public')->mimeType($path),

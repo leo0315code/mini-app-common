@@ -44,6 +44,20 @@ class Media extends Model
     }
 
     /**
+     * 根据文件名扩展名推断分组（不改表结构，仅用于后台上传自动归类）。
+     */
+    public static function inferCollectionFromFileName(string $fileName): string
+    {
+        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+        return match ($ext) {
+            'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp' => 'images',
+            'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'md', 'csv', 'zip', 'rar' => 'documents',
+            default => 'others',
+        };
+    }
+
+    /**
      * 返回完整可访问 URL。
      */
     public function getUrlAttribute($value): string
