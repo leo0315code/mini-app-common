@@ -1,0 +1,13 @@
+.git
+.idea
+.workbuddy
+.env
+.env.backup
+.env.production
+node_modules
+vendor
+public/build
+storage/logs
+.phpunit.result.cache
+docker-compose*.yml
+laravel-mini
