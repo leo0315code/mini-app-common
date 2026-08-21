@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
     {
         // 创建管理员账号
         User::firstOrCreate(
-            ['email' => 'admin@example.com'],
+            ['email' => '453507012@qq.com'],
             [
                 'name' => '管理员',
                 'password' => Hash::make('admin123'),
