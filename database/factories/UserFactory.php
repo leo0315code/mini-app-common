@@ -25,6 +25,7 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'name' => fake()->name(),
             'openid' => 'o' . Str::random(27),
             'unionid' => null,
             'nickname' => fake()->name(),
@@ -46,6 +47,19 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * 管理员用户状态（无 openid，有 name/email/password）
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'openid' => null,
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'password' => static::$password ??= Hash::make('password'),
         ]);
     }
 }

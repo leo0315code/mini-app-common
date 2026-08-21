@@ -15,7 +15,13 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\TernaryFilter;
+use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class UserResource extends Resource
 {
@@ -23,11 +29,20 @@ class UserResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
+    protected static string|UnitEnum|null $navigationGroup = '系统管理';
+
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $navigationLabel = '用户管理';
 
     protected static ?string $modelLabel = '用户';
 
     protected static ?string $pluralModelLabel = '用户列表';
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::count() ?: null;
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -37,7 +52,6 @@ class UserResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('openid')
                             ->label('OpenID')
-                            ->required()
                             ->maxLength(64)
                             ->disabled(fn (?User $record) => $record !== null),
                         Forms\Components\TextInput::make('unionid')
@@ -80,17 +94,23 @@ class UserResource extends Resource
             ->columns([
                 TextColumn::make('id')
                     ->label('ID')
-                    ->sortable(),
-                TextColumn::make('openid')
-                    ->label('OpenID')
-                    ->searchable()
-                    ->limit(20),
+                    ->sortable()
+                    ->toggleable(),
+                ImageColumn::make('avatar')
+                    ->label('头像')
+                    ->circular()
+                    ->size(40)
+                    ->defaultImageUrl('https://ui-avatars.com/api/?name=User&background=random'),
                 TextColumn::make('nickname')
                     ->label('昵称')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('phone')
                     ->label('手机号')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable()
+                    ->copyable()
+                    ->copyMessage('手机号已复制'),
                 TextColumn::make('gender')
                     ->label('性别')
                     ->formatStateUsing(fn (string $state): string => match ($state) {
@@ -98,11 +118,25 @@ class UserResource extends Resource
                         '1' => '男',
                         '2' => '女',
                         default => $state,
-                    }),
+                    })
+                    ->toggleable(),
+                IconColumn::make('openid')
+                    ->label('小程序用户')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('gray'),
                 TextColumn::make('created_at')
                     ->label('注册时间')
                     ->dateTime('Y-m-d H:i')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
+                TextColumn::make('updated_at')
+                    ->label('更新时间')
+                    ->dateTime('Y-m-d H:i')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('gender')
@@ -112,6 +146,32 @@ class UserResource extends Resource
                         1 => '男',
                         2 => '女',
                     ]),
+                TernaryFilter::make('openid')
+                    ->label('小程序用户')
+                    ->nullable()
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereNotNull('openid'),
+                        false: fn (Builder $query) => $query->whereNull('openid'),
+                        blank: fn (Builder $query) => $query,
+                    ),
+                TernaryFilter::make('phone')
+                    ->label('已绑定手机')
+                    ->nullable()
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereNotNull('phone')->where('phone', '!=' , ''),
+                        false: fn (Builder $query) => $query->whereNull('phone')->orWhere('phone', '=' , ''),
+                        blank: fn (Builder $query) => $query,
+                    ),
+                Filter::make('created_at')
+                    ->form([
+                        Forms\Components\DatePicker::make('created_from')->label('注册开始日期'),
+                        Forms\Components\DatePicker::make('created_until')->label('注册结束日期'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when($data['created_from'], fn (Builder $query, $date) => $query->whereDate('created_at', '>=', $date))
+                            ->when($data['created_until'], fn (Builder $query, $date) => $query->whereDate('created_at', '<=', $date));
+                    }),
             ])
             ->actions([
                 EditAction::make(),

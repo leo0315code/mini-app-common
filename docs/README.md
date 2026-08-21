@@ -22,6 +22,7 @@
 | [database.md](./database.md) | 数据表结构设计 |
 | [structure.md](./structure.md) | 目录结构与核心文件职责 |
 | [testing.md](./testing.md) | 测试指南（单元测试 / 功能测试 / CI） |
+| [admin.md](./admin.md) | 管理后台使用指南（FilamentPHP） |
 | [changelog.md](./changelog.md) | 版本变更记录 |
 
 ---
@@ -32,6 +33,7 @@
 - **鉴权**：Laravel Sanctum 4.x（API Token）
 - **数据库**：默认 SQLite（开发），支持 MySQL / PostgreSQL（生产）
 - **微信接口**：小程序 `code2session`（登录凭证校验）
+- **管理后台**：FilamentPHP v5（用户管理、数据统计）
 
 ---
 
