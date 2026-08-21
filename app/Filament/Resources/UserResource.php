@@ -1,0 +1,141 @@
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Filament\Resources\UserResource\Pages;
+use App\Models\User;
+use Filament\Forms;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+
+class UserResource extends Resource
+{
+    protected static ?string $model = User::class;
+
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
+
+    protected static ?string $navigationLabel = '用户管理';
+
+    protected static ?string $modelLabel = '用户';
+
+    protected static ?string $pluralModelLabel = '用户列表';
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Section::make('基本信息')
+                    ->schema([
+                        Forms\Components\TextInput::make('openid')
+                            ->label('OpenID')
+                            ->required()
+                            ->maxLength(64)
+                            ->disabled(fn (?User $record) => $record !== null),
+                        Forms\Components\TextInput::make('unionid')
+                            ->label('UnionID')
+                            ->maxLength(64),
+                        Forms\Components\TextInput::make('nickname')
+                            ->label('昵称')
+                            ->maxLength(64),
+                        Forms\Components\TextInput::make('phone')
+                            ->label('手机号')
+                            ->tel()
+                            ->maxLength(20),
+                        Forms\Components\Select::make('gender')
+                            ->label('性别')
+                            ->options([
+                                0 => '未知',
+                                1 => '男',
+                                2 => '女',
+                            ])
+                            ->default(0),
+                        Forms\Components\TextInput::make('avatar')
+                            ->label('头像')
+                            ->url()
+                            ->maxLength(512),
+                    ])->columns(2),
+
+                Section::make('扩展信息')
+                    ->components([
+                        Forms\Components\KeyValue::make('meta')
+                            ->label('Meta 数据')
+                            ->keyLabel('键')
+                            ->valueLabel('值'),
+                    ]),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable(),
+                TextColumn::make('openid')
+                    ->label('OpenID')
+                    ->searchable()
+                    ->limit(20),
+                TextColumn::make('nickname')
+                    ->label('昵称')
+                    ->searchable(),
+                TextColumn::make('phone')
+                    ->label('手机号')
+                    ->searchable(),
+                TextColumn::make('gender')
+                    ->label('性别')
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        '0' => '未知',
+                        '1' => '男',
+                        '2' => '女',
+                        default => $state,
+                    }),
+                TextColumn::make('created_at')
+                    ->label('注册时间')
+                    ->dateTime('Y-m-d H:i')
+                    ->sortable(),
+            ])
+            ->filters([
+                SelectFilter::make('gender')
+                    ->label('性别')
+                    ->options([
+                        0 => '未知',
+                        1 => '男',
+                        2 => '女',
+                    ]),
+            ])
+            ->actions([
+                EditAction::make(),
+                DeleteAction::make(),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ])
+            ->defaultSort('created_at', 'desc');
+    }
+
+    public static function getRelations(): array
+    {
+        return [];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListUsers::route('/'),
+            'create' => Pages\CreateUser::route('/create'),
+            'edit' => Pages\EditUser::route('/{record}/edit'),
+        ];
+    }
+}
