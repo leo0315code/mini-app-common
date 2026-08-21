@@ -20,15 +20,32 @@ mini-app-common/
 │   │   └── Resources/
 │   │       └── UserResource.php          # 用户 JSON 响应格式
 │   ├── Models/
-│   │   └── User.php                      # 用户模型（含 openid/phone/meta + tokens 关联）
+│   │   ├── User.php                      # 用户模型（含 openid/phone/meta + tokens 关联）
+│   │   ├── Announcement.php              # 公告（小程序端拉取已发布内容）
+│   │   ├── Feedback.php                  # 用户反馈（小程序端提交，后台处理）
+│   │   └── AuditLog.php                  # 操作审计日志
 │   ├── Services/
 │   │   └── WechatService.php             # 微信 code2session + 手机号解密
+│   │   └── Audit.php                     # 审计日志便捷写入服务
+│   ├── Observers/
+│   │   └── AuditObserver.php             # 监听 User/Announcement/Feedback 写库自动记审计
+│   ├── Http/
+│   │   └── Controllers/
+│   │       ├── AuthController.php        # 微信登录 / 退出
+│   │       ├── UserController.php        # 当前用户 / 更新资料
+│   │       ├── PhoneController.php       # 手机号绑定
+│   │       ├── AnnouncementController.php # 小程序端公告列表/详情（公开）
+│   │       └── FeedbackController.php    # 小程序端反馈提交（auth:sanctum）
 │   ├── Filament/                          # 管理后台（FilamentPHP v5）
 │   │   ├── Resources/
 │   │   │   ├── UserResource.php          # 用户管理（列表/创建/编辑）
-│   │   │   └── TokenResource.php         # API Token 管理（撤销）
+│   │   │   ├── TokenResource.php         # API Token 管理（撤销）
+│   │   │   ├── AnnouncementResource.php  # 公告管理（增删改查 + 发布状态）
+│   │   │   ├── FeedbackResource.php      # 用户反馈（查看 + 处理动作）
+│   │   │   └── AuditLogResource.php      # 操作日志（只读 + 详情）
 │   │   ├── Pages/
-│   │   │   └── Dashboard.php             # 自定义工作台首页（覆盖默认 Dashboard）
+│   │   │   ├── Dashboard.php             # 自定义工作台首页（覆盖默认 Dashboard）
+│   │   │   └── SystemConfig.php          # 系统配置（写 settings 表 + 运行时同步）
 │   │   ├── Widgets/                      # 仪表盘组件
 │   │   │   ├── UserStatsWidget.php       # 统计卡片
 │   │   │   ├── UserRegistrationChart.php # 注册趋势图
@@ -37,7 +54,7 @@ mini-app-common/
 │   │   └── Providers/
 │   │       └── AdminPanelProvider.php   # 后台面板配置
 │   └── Providers/
-│       ├── AppServiceProvider.php        # API 限流配置
+│       ├── AppServiceProvider.php        # API 限流 + 审计 Observer 注册
 │       └── Filament/
 │           └── AdminPanelProvider.php   # 后台面板注册
 ├── bootstrap/
@@ -193,7 +210,12 @@ mini-app-common/
     - 安全：`SANCTUM_TOKEN_EXPIRATION`（填 0/空=永久）、`SANCTUM_TOKEN_PREFIX`。
     - 站点：后台品牌名 `'brandName'`。
     - 保存时既写入 `settings` 表（持久化），又同步到当前请求运行时 `config`；未配置项回退各 `config` 文件默认值。
+  - `AuditLogResource`（导航「操作日志」，分组「系统管理」）：只读审计列表，记录 `type`(create/update/delete/login/config) + `module` + 操作人/时间/IP/变更 diff。提供列表筛选（类型/模块/操作人/时间）与详情查看（`view` 页）。导航徽标显示当日日志数。
+- **内容运营**（导航分组）：
+  - `AnnouncementResource`：公告管理（增删改查）。字段：标题/正文(RichEditor)/类型(通知·活动·版本更新)/状态(草稿·已发布·已下线)/发布时间；列表按状态、类型筛选，发布后立即生效；小程序端经 `/api/announcements` 拉取已发布内容。
+  - `FeedbackResource`：用户反馈（只读 + 处理）。列表按类型/状态筛选，导航徽标显示待处理数；每条提供「处理」动作（改状态 pending/processing/resolved/rejected + 处理备注），处理人/处理时间自动记录；小程序端经 `POST /api/feedback` 提交（auth:sanctum）。
 - 访问控制：`User::canAccessPanel()` —— 仅拥有 `email` + `password` 的管理员可登录后台。
+- 审计自动写入：`App\Observers\AuditObserver` 在 `AppServiceProvider::boot()` 注册，监听 `User`/`Announcement`/`Feedback` 的 Eloquent `created`/`updated`/`deleted` 事件，自动调用 `App\Services\Audit::log()` 写 `audit_logs` 表。
 
 ### `app/Models/Setting.php` 与 `settings` 表
 - 键值表：`group` + `key` 唯一，单列 `value` 为 JSON（`array` cast）。

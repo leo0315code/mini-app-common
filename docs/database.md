@@ -13,6 +13,10 @@
 | `users` | 微信小程序用户主表 | Laravel 默认 + 扩展字段 |
 | `personal_access_tokens` | Sanctum 令牌表 | Sanctum 迁移 |
 | `cache` / `jobs` | Laravel 基础设施 | 默认迁移 |
+| `settings` | 系统配置键值表（分组 + JSON value） | v1.4.0 迁移 |
+| `audit_logs` | 操作审计日志 | v1.5.0 迁移 |
+| `announcements` | 公告/通知 | v1.5.0 迁移 |
+| `feedback` | 用户反馈 | v1.5.0 迁移 |
 
 ---
 
@@ -96,5 +100,50 @@ Schema::create('users', function (Blueprint $table) {
 | --- | --- |
 | `user_phones` | 解密后的手机号（需 `session_key`，单独授权） |
 | `configs` | 小程序端配置（开关、文案） |
-| `audit_logs` | 操作审计 |
 | `*_business` | 具体业务表（订单、内容等） |
+
+---
+
+## 6. v1.5.0 新增业务表
+
+### `settings`（系统配置，v1.4.0）
+键值表，`group` + `key` 唯一，`value` 为 JSON（`array` cast）。由 `App\Models\Setting` 访问：`getGroup($group, $defaults)` / `setGroup($group, $data)`。
+
+### `audit_logs`（操作审计，v1.5.0）
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | bigint | PK |
+| `type` | varchar | create/update/delete/login/config |
+| `module` | varchar | user/token/announcement/feedback/system |
+| `action` | varchar | 动作描述 |
+| `description` | text | 可读描述 |
+| `old_data` / `new_data` | json | 变更前 / 后（可空） |
+| `subject_type` / `subject_id` | varchar / bigint | 多态关联被操作对象 |
+| `user_id` | bigint | 操作人（可空） |
+| `url` / `ip` | varchar | 请求地址 / IP |
+| `created_at` | timestamp | 时间（按日建索引） |
+
+### `announcements`（公告，v1.5.0）
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `title` | varchar(120) | 标题 |
+| `content` | longtext | 正文（RichEditor） |
+| `type` | varchar | notice / activity / update |
+| `status` | varchar | draft / published / offline |
+| `published_at` | timestamp | 发布时间（可空） |
+| `created_by` | bigint | 发布人 FK → users |
+
+### `feedback`（用户反馈，v1.5.0）
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `user_id` | bigint | 提交用户 FK → users（可空，游客可投） |
+| `type` | varchar | suggestion / bug / complaint / other |
+| `content` | text | 反馈内容 |
+| `contact` | varchar | 联系方式（可空） |
+| `status` | varchar | pending / processing / resolved / rejected |
+| `handle_note` | text | 处理备注 / 回复内容 |
+| `handled_by` | bigint | 处理人 FK → users（可空） |
+| `handled_at` | timestamp | 处理时间（可空） |

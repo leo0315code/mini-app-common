@@ -4,6 +4,28 @@
 
 ---
 
+## [v1.5.0] - 2026-08-21
+
+### 新增
+
+- **操作审计（系统管理）**：新增 `audit_logs` 表 + `App\Models\AuditLog`、`App\Services\Audit`、`App\Observers\AuditObserver`。Observer 监听 `User`/`Announcement`/`Feedback` 的 `created`/`updated`/`deleted` 事件，自动记录 `type`/`module`/操作人/时间/IP/变更 diff。`AuditLogResource`（只读 + 详情查看，导航徽标显示当日数）。
+- **公告管理（内容运营）**：新增 `announcements` 表 + `Announcement` 模型与 `AnnouncementResource`（增删改查）。支持类型（通知/活动/版本更新）、状态（草稿/已发布/已下线）、发布时间；列表按类型/状态筛选；保存时自动记审计。`POST /api/announcements` + `GET /api/announcements/{id}` 供小程序端拉取已发布内容。
+- **用户反馈（内容运营）**：新增 `feedback` 表 + `Feedback` 模型与 `FeedbackResource`（只读列表 + 详情 + 「处理」动作，导航徽标显示待处理数）。后台处理改状态并记录处理人/时间；`POST /api/feedback`（auth:sanctum）供小程序端提交。
+- 新增 `database/factories/AnnouncementFactory.php`、`FeedbackFactory.php`（含 draft/offline 状态）。
+- 新增 `tests/Feature/ContentApiTest.php`（公开公告列表/详情、反馈提交鉴权与校验、提交落库与审计）覆盖。
+
+### 文档
+
+- `structure.md`：目录树与核心文件职责补充 公告/反馈/审计/API 控制器；新增「内容运营」「审计自动写入」说明。
+- `database.md`：业务表清单补充 settings/audit_logs/announcements/feedback，新增第 6 节 v1.5.0 表结构。
+- `changelog.md`：新增 v1.5.0。
+
+### 测试
+
+- 全量测试 **33 passed (84 assertions)**。
+
+---
+
 ## [v1.3.1] - 2026-08-21
 
 ### 新增
