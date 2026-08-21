@@ -42,7 +42,7 @@
 
 - `structure.md`：补充「系统配置」页与 `Setting` 模型 / `settings` 表说明。
 - `admin.md`：补全功能模块（工作台、Token 管理、系统配置、导航结构、品牌与主题、Docker 访问）。
-- `install.md`：新增「Docker 部署」章节（启动、文件说明、自定义）。
+- `install.md`：新增「Docker 部署」章节（启动、文件说明、自定义）与「Docker 生产部署」章节（服务器准备、生产配置、HTTPS、更新发布、备份恢复、常见问题）。
 - `README.md`：新增 Docker 一键启动，测试用例数更新为 26。
 - `changelog.md`：补录 v1.3.1 修复项，新增 v1.4.0。
 

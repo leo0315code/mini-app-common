@@ -116,7 +116,94 @@ docker compose up -d --build
 
 ---
 
-## 7. 生产部署要点
+## 7. Docker 生产部署
+
+在服务器上使用容器运行本项目（PHP-FPM + Nginx + MySQL + Redis）。
+
+### 7.1 服务器准备
+
+- 安装 Docker Engine 与 Compose 插件：
+  ```bash
+  curl -fsSL https://get.docker.com | sh
+  docker compose version
+  ```
+- 克隆代码：`git clone git@github.com:leo0315code/mini-app-common.git && cd mini-app-common`
+
+### 7.2 生产环境配置
+
+```bash
+cp .env.example .env
+```
+
+关键变量：
+
+| 变量 | 生产建议值 |
+| --- | --- |
+| `APP_ENV` | `production` |
+| `APP_DEBUG` | `false` |
+| `APP_URL` | `https://你的域名` |
+| `APP_PORT` | `8080`（默认，供 Nginx 反代或直接访问） |
+| `MINI_PROGRAM_APP_ID` / `MINI_PROGRAM_SECRET` | 微信小程序凭证 |
+| `MYSQL_DATABASE` / `MYSQL_USER` / `MYSQL_PASSWORD` / `MYSQL_ROOT_PASSWORD` | 使用强密码，勿用默认值 |
+| `SANCTUM_TOKEN_EXPIRATION` | 按需设置 Token 有效期（分钟，空=永久） |
+
+> 生产环境密码请务必修改 `docker-compose.yml` 中的 `MYSQL_*` 默认值；微信小程序后台配置「request 合法域名」为 `https://你的域名`。
+
+### 7.3 构建与启动
+
+```bash
+docker compose up -d --build
+docker compose ps                # 确认 4 个服务 healthy
+curl http://localhost:8080/up    # 应返回 200
+```
+
+- 首次启动自动生成 `.env` / `APP_KEY` 并执行迁移
+- 创建管理员：`docker compose exec app php artisan db:seed`
+- 生产环境应手动收紧权限：`docker compose exec app chmod -R ug+rw storage`
+
+### 7.4 HTTPS
+
+小程序要求合法域名必须是 HTTPS，二选一：
+
+- **方式一：Nginx 容器直挂证书**：将证书挂载进容器，在 `docker/nginx/default.conf` 增加 443 `server` 块并 `docker compose restart nginx`
+- **方式二（推荐）：外部反代**：用 Caddy / Nginx / 云负载均衡将 `https://你的域名` 反向代理到服务器 `:8080`，应用层无需改动
+
+### 7.5 更新发布
+
+```bash
+git pull
+docker compose build            # 代码 / 依赖 / 前端资源有变更时重建
+docker compose up -d            # 启动新容器
+docker compose exec app php artisan migrate --force   # 执行新迁移
+```
+
+> `docker compose up -d --build` 可一步完成「构建 + 启动」。修改宿主机 `.env` 后需 `docker compose up -d` 重启容器才生效。
+
+### 7.6 数据备份与恢复
+
+```bash
+# 备份 MySQL
+docker compose exec mysql sh -c "mysqldump -u\$MYSQL_USER -p\$MYSQL_PASSWORD \$MYSQL_DATABASE" > backup.sql
+
+# 恢复 MySQL
+cat backup.sql | docker compose exec -T mysql sh -c "mysql -u\$MYSQL_USER -p\$MYSQL_PASSWORD \$MYSQL_DATABASE"
+```
+
+### 7.7 数据持久化说明
+
+- 数据保存在命名卷 `mysql_data` / `redis_data`：`docker compose down` 不丢数据，`docker compose down -v` 会连同数据一并删除
+- Redis 仅缓存 / 会话 / 队列，可随时重建；MySQL 是唯一需要定期备份的数据源
+
+### 7.8 常见问题
+
+- **`livewire.js` 404**：静态资源请求需回退到 Laravel（`docker/nginx/default.conf` 已内置 `try_files $uri /index.php`），无需额外处理
+- **修改代码不生效**：源码挂载在开发环境生效；生产镜像需 `docker compose build` 重建
+- **后台无样式**：确认镜像包含前端构建产物，执行 `docker compose build` 重建
+- **Redis 连接失败**：确认 `REDIS_CLIENT=phpredis`（镜像已装扩展）且宿主机 `.env` 未覆盖 `REDIS_HOST`
+
+---
+
+## 8. 生产部署要点
 
 1. **关闭调试**：`.env` 中 `APP_ENV=production`、`APP_DEBUG=false`。
 2. **使用正式数据库**：将 `DB_CONNECTION` 改为 `mysql` 并填好连接信息。
@@ -126,7 +213,7 @@ docker compose up -d --build
 
 ---
 
-## 8. Git 与版本号规范
+## 9. Git 与版本号规范
 
 ### 分支策略
 
