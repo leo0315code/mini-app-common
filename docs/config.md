@@ -96,7 +96,33 @@ SANCTUM_TOKEN_EXPIRATION=10080   # 7 天 = 7 * 24 * 60
 
 ---
 
-## 4. 微信接口地址
+## 4. 跨域配置（CORS）
+
+微信小程序 `wx.request` 的 origin 为 `https://servicewechat.com` 且不固定，因此默认允许所有来源。
+
+`config/cors.php` 已通过环境变量驱动：
+
+```php
+'allowed_origins' => env('CORS_ALLOWED_ORIGINS')
+    ? explode(',', env('CORS_ALLOWED_ORIGINS'))
+    : ['*'],
+
+'max_age' => env('CORS_MAX_AGE', 0),
+```
+
+```env
+# 留空 = 允许所有来源（小程序默认）
+CORS_ALLOWED_ORIGINS=
+# 接入自有 Web 管理端 / H5 时收紧为具体域名，逗号分隔
+# CORS_ALLOWED_ORIGINS=https://a.com,https://b.com
+CORS_MAX_AGE=0
+```
+
+> Laravel 13 默认已全局注册 `HandleCors` 中间件，且 `paths` 涵盖 `api/*`，无需额外挂中间件。
+
+---
+
+## 5. 微信接口地址
 
 `code2session` 请求地址（已由 `WechatService` 封装，无需手动调用）：
 

@@ -4,6 +4,61 @@
 
 ---
 
+## [v1.3.1] - 2026-08-21
+
+### 新增
+
+- **自定义后台工作台首页**：新增 `app/Filament/Pages/Dashboard.php`，继承 `Filament\Pages\Dashboard` 覆盖默认的纯 widgets 首页。新增欢迎区（可折叠说明侧栏）+ 右上「查看全部用户」快捷入口；页面布局由 `content(Schema)` 用 `Section` / `Grid` 重组为「统计卡片 → 2 列图表 → 最近用户表」；导航标签改为「工作台」并固定在最前。
+- **工作台时间范围筛选（图表联动）**：Dashboard 引入 `HasFiltersForm` + `FilterAction`（右上角「筛选」弹窗），提供「近 7/30/90 天 / 全部」选项，URL 同步并 session 持久化。四个 widget 通过 `$this->pageFilters['range']` 联动：统计卡片改为显示该范围新增与手机绑定率；注册趋势图天数随范围变化；性别分布图与最近用户表按时间段过滤。统一由 `Dashboard::rangeDates()` 计算起止时间。
+
+### 文档
+
+- 更新 `structure.md`：目录树补充 `Pages/Dashboard.php`，第 6 节补充自定义工作台首页与时间范围筛选说明。
+
+---
+
+## [v1.3.0] - 2026-08-21
+
+### 修复
+
+- **致命缺陷**：`app/Models/User.php` 中 `Laravel\Sanctum\PersonalAccessToken` 被重复 `use` 4 次，导致应用无法启动（`PHP Fatal error`），所有请求与测试均失败。清理为单次导入。
+
+### 新增
+
+- **CORS 跨域配置**：发布 `config/cors.php`，新增 `CORS_ALLOWED_ORIGINS` / `CORS_MAX_AGE` 环境变量，支持按来源收紧白名单（小程序默认 `*`）。
+- **Sanctum Token 有效期**：`config/sanctum.php` 的 `expiration` 改为读取 `SANCTUM_TOKEN_EXPIRATION`，使 `.env` 文档约定生效。
+
+### 修复
+
+- **Filament v5 弃用 API**：`UserResource` 与 `TokenResource` 的表格动作由弃用的 `->actions()` / `->bulkActions()` 迁移至 `->recordActions()` / `->toolbarActions()`，消除弃用告警。
+
+### 新增
+
+- **CI 工作流**：落地 `.github/workflows/ci.yml`（GitHub Actions），`push` / `pull_request` 到 `main` 自动运行测试（SQLite `:memory:` + `RefreshDatabase`，无需外部数据库）。含 PHP 8.3 矩阵、Composer 缓存；`frontend` job 默认关闭，可按需启用。
+
+### 文档
+
+- 更新 `config.md`：补充 CORS 配置章节、修正章节序号。
+- 更新 `structure.md`：补充 Filament 后台目录、CORS 配置、后台访问说明。
+- 更新 `testing.md`：第 7 节「持续集成」与已落地的 `ci.yml` 对齐（文件名、PHP 矩阵、`cp .env.example` 流程、SQLite 内存库）。
+- 根目录 `README.md` 与 `.env.example` 统一中文本地化（`zh_CN`）。
+
+---
+
+## [v1.2.0] - 2026-08-21
+
+> 集成 FilamentPHP v5 管理后台（用户管理 + 数据统计仪表盘）。
+
+### 新增
+
+- **管理后台**：`/admin` 路径，FilamentPHP v5 构建。
+  - 用户管理：`UserResource`（列表/创建/编辑/删除 + 多维筛选 + 手机号复制）。
+  - Token 管理：`TokenResource`（查看/撤销 Sanctum Token）。
+  - 仪表盘：用户统计卡片、近 7 天注册趋势、性别分布、最近用户表。
+- **本地化**：`.env` 默认 `APP_LOCALE=zh_CN`。
+
+---
+
 ## [v1.1.0] - 2026-08-21
 
 ### 新增

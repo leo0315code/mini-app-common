@@ -159,12 +159,25 @@ class AuthTest extends TestCase
 
 ## 7. 持续集成
 
-建议在 CI（如 GitHub Actions）中自动运行测试：
+已落地 GitHub Actions 工作流：`.github/workflows/ci.yml`，在 `push` / `pull_request` 到 `main` 时自动运行 `php artisan test`（SQLite `:memory:` 内存库 + `RefreshDatabase`，无需外部数据库服务）。
+
+关键设计：
+
+- 矩阵 `php: ['8.3']`，与 `composer.json` 的 `php: ^8.3` 一致；升版本只需改一处。
+- Composer 依赖缓存（`~/.composer/cache/files`），加速 CI。
+- `frontend` job 默认 `if: false` 关闭——当前仓库前端仅做资源打包、无测试脚本，需要时可置为 `true`。
+- 若改用 MySQL / PostgreSQL，取消 `jobs.test.services` 中对应的注释块，并在 `Run tests` 步骤覆盖 `DB_*` 环境变量。
+
+如需自定义，以下为工作流核心片段（完整以仓库文件为准）：
 
 ```yaml
-# .github/workflows/tests.yml
-name: Tests
-on: [push, pull_request]
+# .github/workflows/ci.yml
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -173,7 +186,9 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-      - run: composer install --no-interaction
+          extensions: mbstring, intl, sqlite3, pdo_sqlite, bcmath, gd
+          tools: composer:v2
+      - run: composer install --prefer-dist --no-interaction --no-progress
       - run: cp .env.example .env && php artisan key:generate
-      - run: php artisan test
+      - run: php artisan test --no-coverage
 ```

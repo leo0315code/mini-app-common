@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3']
+
+    services:
+      # 若后续改用 MySQL/PostgreSQL，在此启用对应服务
+      # mysql:
+      #   image: mysql:8.0
+      #   env:
+      #     MYSQL_ROOT_PASSWORD: root
+      #     MYSQL_DATABASE: mini_app_common
+      #   ports:
+      #     - 3306:3306
+      #   options: >-
+      #     --health-cmd="mysqladmin ping" --health-interval=10s
+      #     --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, intl, sqlite3, pdo_sqlite, bcmath, gd
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run tests
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"
+        run: php artisan test --no-coverage
+
+  # 可选：前端构建校验（当前前端仅做资源打包，无测试）
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    if: false # 置为 true 可启用；当前仓库未配置前端测试脚本
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: npm ci --ignore-scripts
+      - run: npm run build

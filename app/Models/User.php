@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Laravel\Sanctum\PersonalAccessToken;
 
 #[Fillable([
     'openid', 'unionid', 'nickname', 'avatar', 'gender', 'phone', 'meta',
@@ -45,5 +46,13 @@ class User extends Authenticatable implements FilamentUser
             'meta' => 'array',
             'gender' => 'integer',
         ];
+    }
+
+    /**
+     * 用户的 API Token 关联
+     */
+    public function tokens()
+    {
+        return $this->morphMany(PersonalAccessToken::class, 'tokenable');
     }
 }

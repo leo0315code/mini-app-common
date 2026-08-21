@@ -20,15 +20,34 @@ mini-app-common/
 │   │   └── Resources/
 │   │       └── UserResource.php          # 用户 JSON 响应格式
 │   ├── Models/
-│   │   └── User.php                      # 用户模型（含 openid/phone/meta）
-│   └── Services/
-│       └── WechatService.php             # 微信 code2session + 手机号解密
+│   │   └── User.php                      # 用户模型（含 openid/phone/meta + tokens 关联）
+│   ├── Services/
+│   │   └── WechatService.php             # 微信 code2session + 手机号解密
+│   ├── Filament/                          # 管理后台（FilamentPHP v5）
+│   │   ├── Resources/
+│   │   │   ├── UserResource.php          # 用户管理（列表/创建/编辑）
+│   │   │   └── TokenResource.php         # API Token 管理（撤销）
+│   │   ├── Pages/
+│   │   │   └── Dashboard.php             # 自定义工作台首页（覆盖默认 Dashboard）
+│   │   ├── Widgets/                      # 仪表盘组件
+│   │   │   ├── UserStatsWidget.php       # 统计卡片
+│   │   │   ├── UserRegistrationChart.php # 注册趋势图
+│   │   │   ├── GenderDistributionChart.php # 性别分布图
+│   │   │   └── RecentUsersTable.php     # 最近用户表
+│   │   └── Providers/
+│   │       └── AdminPanelProvider.php   # 后台面板配置
+│   └── Providers/
+│       ├── AppServiceProvider.php        # API 限流配置
+│       └── Filament/
+│           └── AdminPanelProvider.php   # 后台面板注册
 ├── bootstrap/
 │   ├── app.php                           # 应用引导（路由/中间件/异常处理）
 │   └── providers.php                     # 服务提供者注册
 ├── config/
 │   ├── services.php                      # 微信小程序 app_id/secret 配置
-│   └── sanctum.php                       # Sanctum 配置
+│   ├── sanctum.php                       # Sanctum 配置（含 Token 过期）
+│   ├── cors.php                          # 跨域配置（微信小程序调用 API）
+│   └── filament.php                      # Filament 后台配置（发布后存在）
 ├── database/
 │   └── migrations/
 │       ├── 0001_..._create_users_table.php       # users（扩展字段）
@@ -148,3 +167,18 @@ mini-app-common/
 - 控制器：`<Xxx>Controller`，方法 `index/show/store/update/destroy/login/logout`。
 - 服务类：`<Xxx>Service`，动词方法（`code2Session`、`getUserInfo`）。
 - 配置键：`UPPER_SNAKE_CASE`，分组在 `config/services.php`。
+
+---
+
+## 6. 管理后台（FilamentPHP）
+
+后台路径 `/admin`，由 `app/Providers/Filament/AdminPanelProvider.php` 定义：
+
+- **自定义工作台首页**（`app/Filament/Pages/Dashboard.php`）：继承 `Filament\Pages\Dashboard`，覆盖默认的纯 widgets 首页。
+  - 顶部欢迎区（带可折叠说明侧栏）+ 右上「查看全部用户」快捷入口。
+  - 布局：统计卡片 → 2 列（注册趋势图 + 性别分布图）→ 最近注册用户表，均由 `content(Schema)` 用 `Grid`/`Section` 重组。
+  - 导航标签为「工作台」，`navigationSort = -2` 固定在最前。
+- **系统管理**：
+  - `UserResource`：用户增删改查、性别/小程序用户/已绑定手机/注册时间筛选、手机号一键复制。
+  - `TokenResource`：查看与撤销 Sanctum Token（`canCreate()` 关闭，因为 Token 由登录接口签发）。
+- 访问控制：`User::canAccessPanel()` —— 仅拥有 `email` + `password` 的管理员可登录后台。
