@@ -4,6 +4,41 @@
 
 ---
 
+## [v1.7.0] - 2026-08-21
+
+- **内容管理 CMS（文章系统）**：新增 `categories` + `articles` 表与 `Category` / `Article` 模型。
+  - 分类 `Category`：名称/slug/说明/排序/启用，支持 `active()` / `ordered()` 作用域；后台 `CategoryResource` 增删改查（含 `articles_count` 关联统计）。
+  - 文章 `Article`：标题/slug/封面/摘要/正文(RichEditor)/状态(草稿·已发布·已下线)/置顶/浏览数/作者/发布时间；支持按分类筛选、置顶优先排序、浏览数自增；后台 `ArticleResource` 表单含分类下拉（可内联创建）、封面图上传（`articles/` 目录）、状态与置顶；列表含封面、状态徽标、浏览数。
+  - 与 v1.5.0「公告」分层：公告用于轻量速讯/通知，文章用于完整内容频道（支持分类与封面）。
+- **内容中心 API（公开）**：小程序端 `GET /api/article-categories`（启用的频道）、`GET /api/articles`（已发布列表，支持 `category_id` / `keyword` 过滤、置顶优先排序）、`GET /api/articles/{id}`（详情，自增浏览数；草稿返回 404）。统一 `code/message/data` 格式。
+- **审计增强**：`AuditObserver` 增加 `Article` / `Category` 监听，`module` 分别记 `article` / `category`，创建/修改/删除自动落 `audit_logs`。
+- **种子数据**：`DatabaseSeeder` 播种「帮助中心 / 平台公告 / 活动专区」三个分类与若干示例文章（含一篇置顶）。
+- **测试**：新增 `CmsTest`（分类公开列表/文章公开列表与分类过滤/详情浏览数自增/草稿隐藏/后台页面可访问/创建审计），全量 **50 passed**。`php -l` 全过；6 个受影响 Resource 语法校验通过。
+
+### 修复：Filament v5 布局组件 Section 命名空间
+
+- 初版 `ArticleResource`（及 `Category`/`Announcement`/`Feedback`/`Notification`/`Media` 共 6 个 Resource）误以 `use Filament\Forms\Components\Section;` 导入——Filament v5 中 `Section`/`Grid` 等**布局组件**属于 `Filament\Schemas\Components`，输入组件（Select/TextInput 等）才在 `Filament\Forms\Components`。列表页不构建 form 故此坑未被测试暴露，访问 create/edit 即报 `Class "Filament\Forms\Components\Section" not found`（GET /admin/articles/3/edit 500）。已全部改为 `use Filament\Schemas\Components\Section;`，并补 `test_admin_can_edit_article` / `test_admin_can_edit_category` 复现路径。
+
+### 修复：列表页「新增/编辑」按钮缺失
+
+- **「新增」按钮**：Filament v5 列表页顶部 CreateAction 需由 List 页面 `getHeaderActions()` 显式返回 `Actions\CreateAction::make()`（仅 `Notification`/`Media`/`Role`/`User` 当初显式加了，`Article`/`Category`/`Announcement` 漏加，导致列表页顶部无「新增」入口）。已为这 3 个 List 页面补 `getHeaderActions()`。
+- **「编辑」按钮（Media）**：`MediaResource` 在 v1.6.0 只创建了 `ListMedia`/`CreateMedia`，**漏建 `EditMedia` 页面且 `getPages()` 无 `edit` 路由**，导致行内 `EditAction` 无法生成链接（列表页无「编辑」入口）。已补建 `EditMedia.php`（继承 `EditRecord`，含 DeleteAction）并在 `getPages()` 注册 `edit`。同时给 `MediaResource` 的 `recordActions` 补 `EditAction::make()`。
+- 验证：新增 `tests/Feature/ListActionsProbeTest.php`，逐一断言各业务资源列表页含「新增」href 与「编辑」href，全量 **55 passed**。只读资源（审计/反馈/Token）与单页（系统配置）本就不该有增删改，属设计预期。
+
+---
+
+## [v1.6.0] - 2026-08-21
+
+- **RBAC 角色与权限**：新增 `roles` + `role_user` 表与 `Role` 模型；`User` 增加 `roles()` 关联、`hasRole()`/`isSuperAdmin()`/`assignRole()`；`canAccessPanel` 增强为「email+password 且拥有 admin/super-admin 角色」，并在首次部署（roles 空）时回退旧放行规则避免锁死；`RoleResource` 后台角色管理；`UserResource` 表单可指派角色、表格显示角色徽标；`DatabaseSeeder` 播种 4 个默认角色并将管理员设为 super-admin。
+- **站内通知/消息**：`notifications` + `notification_user`（已读回执）表 + `Notification` 模型（`dispatchToRecipients()` 按 scope 展开收件人）；`NotificationResource` 后台群发/定向/列表，保存后自动派发；小程序端 `GET /api/notifications`、`POST /api/notifications/{id}/read`、`POST /api/notifications/read-all`（含未读数）。
+- **文件/媒体管理**：`media` 表 + `Media` 模型（软删文件）；`MediaResource` 后台管理器（FileUpload 接 local public disk、分组筛选、删除即删文件）；小程序端 `POST /api/upload` 返回可访问 URL（auth:sanctum，10MB 限制）。
+- **测试**：新增 RoleFactory / NotificationFactory / MediaFactory + `AdminModulesTest`（角色指派/canAccessPanel 规则/通知群发与指定/已读/媒体上传与校验），全量 **40 passed (111 assertions)**。
+- **文档**：structure.md / database.md / changelog.md 同步。
+
+> 注：RBAC 为轻量实现（角色 slug 控制后台访问与可见性），未引入 permission 包；资源级细粒度授权可作为后续扩展。
+
+---
+
 ## [v1.5.0] - 2026-08-21
 
 ### 新增

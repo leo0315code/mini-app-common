@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Article;
+use App\Models\Category;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -14,14 +17,26 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // 创建默认角色（轻量 RBAC）
+        $roles = [
+            ['name' => '超级管理员', 'slug' => 'super-admin', 'description' => '拥有后台全部权限，可越过资源级限制'],
+            ['name' => '管理员', 'slug' => 'admin', 'description' => '可访问与配置大部分后台功能'],
+            ['name' => '编辑', 'slug' => 'editor', 'description' => '可管理内容（公告、通知、反馈）'],
+            ['name' => '访客', 'slug' => 'viewer', 'description' => '仅查看统计与只读资源'],
+        ];
+        foreach ($roles as $role) {
+            Role::firstOrCreate(['slug' => $role['slug']], $role);
+        }
+
         // 创建管理员账号
-        User::firstOrCreate(
+        $admin = User::firstOrCreate(
             ['email' => '453507012@qq.com'],
             [
                 'name' => '管理员',
                 'password' => Hash::make('admin123'),
             ]
         );
+        $admin->assignRole('super-admin');
 
         // 创建测试小程序用户
         $avatars = [
@@ -50,6 +65,32 @@ class DatabaseSeeder extends Seeder
                     'created_at' => now()->subDays(rand(0, 30))->subHours(rand(0, 23)),
                 ]
             );
+        }
+
+        // 内容分类与示例文章（CMS）
+        $categories = [
+            ['name' => '帮助中心', 'slug' => 'help', 'description' => '使用教程与常见问题', 'sort' => 10],
+            ['name' => '平台公告', 'slug' => 'platform', 'description' => '平台动态与版本资讯', 'sort' => 20],
+            ['name' => '活动专区', 'slug' => 'activity', 'description' => '运营活动与福利', 'sort' => 30],
+        ];
+        foreach ($categories as $category) {
+            Category::firstOrCreate(['slug' => $category['slug']], $category);
+        }
+
+        if (Article::query()->doesntExist()) {
+            $help = Category::where('slug', 'help')->first();
+            Article::factory()->count(2)->state([
+                'category_id' => $help?->id,
+                'title' => '新手入门指南',
+                'summary' => '三步完成小程序绑定与基础设置。',
+            ])->create(['created_by' => $admin->id]);
+
+            $platform = Category::where('slug', 'platform')->first();
+            Article::factory()->state([
+                'category_id' => $platform?->id,
+                'title' => 'v1.7.0 内容中心上线',
+                'is_top' => true,
+            ])->create(['created_by' => $admin->id]);
         }
     }
 }

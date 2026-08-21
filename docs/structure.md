@@ -23,7 +23,9 @@ mini-app-common/
 │   │   ├── User.php                      # 用户模型（含 openid/phone/meta + tokens 关联）
 │   │   ├── Announcement.php              # 公告（小程序端拉取已发布内容）
 │   │   ├── Feedback.php                  # 用户反馈（小程序端提交，后台处理）
-│   │   └── AuditLog.php                  # 操作审计日志
+│   │   ├── AuditLog.php                  # 操作审计日志
+│   │   ├── Category.php                  # 内容分类（CMS）
+│   │   └── Article.php                   # 文章/内容（CMS，小程序端按频道拉取）
 │   ├── Services/
 │   │   └── WechatService.php             # 微信 code2session + 手机号解密
 │   │   └── Audit.php                     # 审计日志便捷写入服务
@@ -38,10 +40,15 @@ mini-app-common/
 │   │       └── FeedbackController.php    # 小程序端反馈提交（auth:sanctum）
 │   ├── Filament/                          # 管理后台（FilamentPHP v5）
 │   │   ├── Resources/
-│   │   │   ├── UserResource.php          # 用户管理（列表/创建/编辑）
+│   │   │   ├── UserResource.php          # 用户管理（列表/创建/编辑 + 角色指派）
 │   │   │   ├── TokenResource.php         # API Token 管理（撤销）
+│   │   │   ├── RoleResource.php          # 角色管理（RBAC）
 │   │   │   ├── AnnouncementResource.php  # 公告管理（增删改查 + 发布状态）
 │   │   │   ├── FeedbackResource.php      # 用户反馈（查看 + 处理动作）
+│   │   │   ├── NotificationResource.php  # 站内通知（群发/定向/已读回执）
+│   │   │   ├── MediaResource.php         # 媒体文件管理（上传/列表/删除）
+│   │   │   ├── CategoryResource.php      # 内容分类管理（CMS）
+│   │   │   ├── ArticleResource.php       # 文章管理（CMS，封面/摘要/置顶）
 │   │   │   └── AuditLogResource.php      # 操作日志（只读 + 详情）
 │   │   ├── Pages/
 │   │   │   ├── Dashboard.php             # 自定义工作台首页（覆盖默认 Dashboard）
@@ -53,6 +60,10 @@ mini-app-common/
 │   │   │   └── RecentUsersTable.php     # 最近用户表
 │   │   └── Providers/
 │   │       └── AdminPanelProvider.php   # 后台面板配置
+│   └── Models/
+│       ├── Role.php                     # 角色（RBAC）
+│       ├── Notification.php             # 站内通知 + 派发回执
+│       └── Media.php                    # 媒体文件记录
 │   └── Providers/
 │       ├── AppServiceProvider.php        # API 限流 + 审计 Observer 注册
 │       └── Filament/
@@ -202,7 +213,9 @@ mini-app-common/
   - 布局：统计卡片 → 2 列（注册趋势图 + 性别分布图）→ 最近注册用户表，均由 `content(Schema)` 用 `Grid`/`Section` 重组。
   - 导航标签为「工作台」，`navigationSort = -2` 固定在最前。
 - **系统管理**：
-  - `UserResource`：用户增删改查、性别/小程序用户/已绑定手机/注册时间筛选、手机号一键复制。
+  - `UserResource`：用户增删改查、性别/小程序用户/已绑定手机/注册时间筛选、手机号一键复制；表单可指派「后台角色」（CheckboxList，RBAC），表格显示角色徽标。
+  - `RoleResource`（导航「角色管理」，分组「系统管理」）：后台角色维护（名称/slug/说明），列表显示成员数。默认 4 个角色：`super-admin`(超级管理员) / `admin`(管理员) / `editor`(编辑) / `viewer`(访客)。
+  - `MediaResource`（导航「媒体管理」，分组「系统管理」）：管理上传的图片/文件，FileUpload 接本地 public disk（`uploads/` 目录），按分组筛选，删除即删实体文件。
   - `TokenResource`：查看与撤销 Sanctum Token（`canCreate()` 关闭，因为 Token 由登录接口签发）。
   - `SystemConfig`（导航「系统配置」，`app/Filament/Pages/SystemConfig.php`）：集中维护可后台变更的系统参数，落库到 `settings` 表并按分组读取。涵盖：
     - 微信小程序 `app_id` / `secret`（默认回退 `config('services.mini_program')`）。
@@ -213,8 +226,11 @@ mini-app-common/
   - `AuditLogResource`（导航「操作日志」，分组「系统管理」）：只读审计列表，记录 `type`(create/update/delete/login/config) + `module` + 操作人/时间/IP/变更 diff。提供列表筛选（类型/模块/操作人/时间）与详情查看（`view` 页）。导航徽标显示当日日志数。
 - **内容运营**（导航分组）：
   - `AnnouncementResource`：公告管理（增删改查）。字段：标题/正文(RichEditor)/类型(通知·活动·版本更新)/状态(草稿·已发布·已下线)/发布时间；列表按状态、类型筛选，发布后立即生效；小程序端经 `/api/announcements` 拉取已发布内容。
+  - `CategoryResource`（导航「内容分类」，分组「内容运营」，sort 5）：内容频道栏目维护（名称/slug/说明/排序/启用），列表显示文章数关联统计；支持启用过滤。
+  - `ArticleResource`（导航「文章管理」，分组「内容运营」，sort 6）：完整内容撰写与发布。字段：分类(下拉可内联创建)/标题/slug/封面(FileUpload 接 `articles/` 目录)/摘要/正文(RichEditor)/状态(草稿·已发布·已下线)/置顶/发布时间；列表按分类/状态/置顶筛选，显示封面缩略图、状态徽标、浏览数；创建时记录作者，发布无发布时间则补当前时间；小程序端经 `GET /api/article-categories`（启用栏目）、`GET /api/articles`（`category_id`/`keyword` 过滤、置顶优先、公开已发布）、`GET /api/articles/{id}`（详情且浏览数自增）交互。
+  - `NotificationResource`（导航「站内通知」）：广播消息 + 已读回执。支持接收范围（全部 / 已注册小程序用户 / 指定用户），保存后按 scope 展开收件人写入 `notification_user`；列表显示接收人数、发送人、已发布状态；导航徽标显示通知总量；小程序端经 `GET /api/notifications`（含未读数）、`POST /api/notifications/{id}/read`、`POST /api/notifications/read-all` 交互。
   - `FeedbackResource`：用户反馈（只读 + 处理）。列表按类型/状态筛选，导航徽标显示待处理数；每条提供「处理」动作（改状态 pending/processing/resolved/rejected + 处理备注），处理人/处理时间自动记录；小程序端经 `POST /api/feedback` 提交（auth:sanctum）。
-- 访问控制：`User::canAccessPanel()` —— 仅拥有 `email` + `password` 的管理员可登录后台。
+- 访问控制：`User::canAccessPanel()` 增强为「拥有 `email` + `password` **且**具备 `admin`/`super-admin` 角色」；首次部署（`roles` 表为空）时回退旧放行规则避免锁死。普通小程序用户（无 email/password）无法进入后台。
 - 审计自动写入：`App\Observers\AuditObserver` 在 `AppServiceProvider::boot()` 注册，监听 `User`/`Announcement`/`Feedback` 的 Eloquent `created`/`updated`/`deleted` 事件，自动调用 `App\Services\Audit::log()` 写 `audit_logs` 表。
 
 ### `app/Models/Setting.php` 与 `settings` 表

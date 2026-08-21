@@ -85,6 +85,17 @@ class UserResource extends Resource
                             ->keyLabel('键')
                             ->valueLabel('值'),
                     ]),
+
+                Section::make('后台角色')
+                    ->description('勾选该用户拥有的后台角色（RBAC）。超级管理员可访问所有功能。')
+                    ->schema([
+                        Forms\Components\CheckboxList::make('roles')
+                            ->label('角色')
+                            ->relationship('roles', 'name')
+                            ->preload()
+                            ->columns(2),
+                    ])
+                    ->collapsible(),
             ]);
     }
 
@@ -137,6 +148,11 @@ class UserResource extends Resource
                     ->dateTime('Y-m-d H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('roles.name')
+                    ->label('角色')
+                    ->badge()
+                    ->separator(',')
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('gender')

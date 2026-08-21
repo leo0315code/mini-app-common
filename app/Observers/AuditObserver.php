@@ -3,7 +3,9 @@
 namespace App\Observers;
 
 use App\Models\Announcement;
+use App\Models\Article;
 use App\Models\AuditLog;
+use App\Models\Category;
 use App\Models\Feedback;
 use App\Models\User;
 use App\Services\Audit;
@@ -40,6 +42,8 @@ class AuditObserver
     {
         return match (get_class($model)) {
             Announcement::class => 'announcement',
+            Article::class => 'article',
+            Category::class => 'category',
             Feedback::class => 'feedback',
             User::class => 'user',
             default => 'system',
@@ -48,7 +52,9 @@ class AuditObserver
 
     public function created($model): void
     {
-        if (! $model instanceof Announcement && ! $model instanceof Feedback && ! $model instanceof User) {
+        if (! $model instanceof Announcement && ! $model instanceof Article
+            && ! $model instanceof Category && ! $model instanceof Feedback
+            && ! $model instanceof User) {
             return;
         }
 
@@ -66,7 +72,9 @@ class AuditObserver
 
     public function updated($model): void
     {
-        if (! $model instanceof Announcement && ! $model instanceof Feedback && ! $model instanceof User) {
+        if (! $model instanceof Announcement && ! $model instanceof Article
+            && ! $model instanceof Category && ! $model instanceof Feedback
+            && ! $model instanceof User) {
             return;
         }
 
@@ -88,7 +96,9 @@ class AuditObserver
 
     public function deleted($model): void
     {
-        if (! $model instanceof Announcement && ! $model instanceof Feedback && ! $model instanceof User) {
+        if (! $model instanceof Announcement && ! $model instanceof Article
+            && ! $model instanceof Category && ! $model instanceof Feedback
+            && ! $model instanceof User) {
             return;
         }
 

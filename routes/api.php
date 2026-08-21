@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\MediaController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PhoneController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +25,11 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::get('/announcements', [AnnouncementController::class, 'index']);
 Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
 
+// 公开接口：内容中心 CMS
+Route::get('/article-categories', [ArticleController::class, 'categories']);
+Route::get('/articles', [ArticleController::class, 'index']);
+Route::get('/articles/{id}', [ArticleController::class, 'show']);
+
 // 受保护接口
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [UserController::class, 'show']);
@@ -31,5 +39,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // 用户反馈（登录后提交）
     Route::post('/feedback', [FeedbackController::class, 'store']);
+
+    // 站内通知（登录后查看/已读）
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+
+    // 文件/媒体上传
+    Route::post('/upload', [MediaController::class, 'upload']);
 });
 

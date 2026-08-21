@@ -15,8 +15,12 @@
 | `cache` / `jobs` | Laravel 基础设施 | 默认迁移 |
 | `settings` | 系统配置键值表（分组 + JSON value） | v1.4.0 迁移 |
 | `audit_logs` | 操作审计日志 | v1.5.0 迁移 |
-| `announcements` | 公告/通知 | v1.5.0 迁移 |
+| `announcements` | 公告 | v1.5.0 迁移 |
 | `feedback` | 用户反馈 | v1.5.0 迁移 |
+| `roles` / `role_user` | RBAC 角色与用户-角色中间表 | v1.6.0 迁移 |
+| `notifications` / `notification_user` | 站内通知与已读回执 | v1.6.0 迁移 |
+| `media` | 媒体/文件记录 | v1.6.0 迁移 |
+| `categories` / `articles` | 内容管理 CMS（分类 / 文章） | v1.7.0 迁移 |
 
 ---
 
@@ -147,3 +151,88 @@ Schema::create('users', function (Blueprint $table) {
 | `handle_note` | text | 处理备注 / 回复内容 |
 | `handled_by` | bigint | 处理人 FK → users（可空） |
 | `handled_at` | timestamp | 处理时间（可空） |
+
+### `roles` / `role_user`（RBAC，v1.6.0）
+
+`roles` 角色表：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | bigint | PK |
+| `name` | varchar | 角色显示名 |
+| `slug` | varchar(唯一) | 角色标识：super-admin / admin / editor / viewer |
+
+`role_user` 中间表：`role_id` + `user_id`（唯一组合，级联删除）。
+
+### `notifications` / `notification_user`（站内通知，v1.6.0）
+
+`notifications` 通知表：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `creator_id` | bigint | 发送人 FK → users（可空） |
+| `title` | varchar | 标题 |
+| `body` | text | 正文 |
+| `type` | varchar | system / activity / version |
+| `scope` | varchar | all(全部) / registered(已注册) / specified(指定用户) |
+| `targets` | json | scope=specified 时的目标用户 id 列表 |
+| `published` | boolean | 是否发布 |
+| `published_at` | timestamp | 发布时间（可空） |
+
+`notification_user`（已读回执，唯一 `notification_id+user_id`，并对 `user_id+read` 建索引）：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `notification_id` | bigint | FK → notifications（级联删除） |
+| `user_id` | bigint | FK → users（级联删除） |
+| `read` | boolean | 是否已读 |
+| `read_at` | timestamp | 已读时间 |
+
+### `media`（媒体文件，v1.6.0）
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | bigint | PK |
+| `user_id` | bigint | 上传者 FK → users（可空） |
+| `collection` | varchar | 分组：default/avatar/announcement/... |
+| `file_name` | varchar | 原始文件名 |
+| `path` | varchar | 磁盘相对路径（`disk` 为 public 时位于 `uploads/...`） |
+| `disk` | varchar | 磁盘驱动，默认 public |
+| `mime_type` | varchar | MIME 类型 |
+| `url` | varchar | 可访问 URL |
+| `size` | bigint | 字节大小 |
+| `meta` | json | 宽高/扩展信息等 |
+
+> 文件实体存于 `storage/app/public/uploads/`，需执行 `php artisan storage:link` 暴露到 `public/storage`。媒体记录删除时会同步删除磁盘文件。
+
+### `categories` / `articles`（内容管理 CMS，v1.7.0）
+
+`categories` 分类表：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | bigint | PK |
+| `name` | varchar | 分类名称 |
+| `slug` | varchar(唯一) | URL 友好标识 |
+| `description` | varchar | 说明（可空） |
+| `sort` | unsigned | 排序，越小越靠前 |
+| `is_active` | boolean | 是否启用 |
+
+`articles` 文章表：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | bigint | PK |
+| `category_id` | bigint | 分类 FK → categories（可空，级联置空） |
+| `title` | varchar(160) | 标题 |
+| `slug` | varchar | 标识（可空） |
+| `cover` | varchar | 封面图 URL（可空） |
+| `summary` | text | 摘要（可空） |
+| `content` | longtext | 正文（RichEditor） |
+| `status` | varchar | draft / published / offline |
+| `is_top` | boolean | 是否置顶 |
+| `views` | unsigned | 浏览数 |
+| `created_by` | bigint | 作者 FK → users（可空） |
+| `published_at` | timestamp | 发布时间（可空） |
+
+> 文章与公告（v1.5.0）分层：公告用于轻量速讯；文章用于完整内容频道，支持分类、封面、摘要、置顶与浏览统计。封面文件存于 `storage/app/public/articles/`。

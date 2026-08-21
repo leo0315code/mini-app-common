@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\Announcement;
+use App\Models\Article;
+use App\Models\Category;
 use App\Models\Feedback;
 use App\Models\User;
 use App\Observers\AuditObserver;
@@ -34,6 +36,8 @@ class AppServiceProvider extends ServiceProvider
         // 关键模型变更自动记录审计日志
         User::observe(AuditObserver::class);
         Announcement::observe(AuditObserver::class);
+        Article::observe(AuditObserver::class);
+        Category::observe(AuditObserver::class);
         Feedback::observe(AuditObserver::class);
     }
 }

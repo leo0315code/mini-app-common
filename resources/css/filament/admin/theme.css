@@ -2,3 +2,8 @@
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
+
+/* 提高富文本编辑器正文输入区高度（默认 min-h-12 仅 48px，写文章太矮） */
+.fi-fo-rich-editor .fi-fo-rich-editor-main .fi-fo-rich-editor-content {
+    min-height: 28rem;
+}

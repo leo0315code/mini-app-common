@@ -1,18 +1,18 @@
 <?php
 
-namespace App\Filament\Resources\AnnouncementResource\Pages;
+namespace App\Filament\Resources\ArticleResource\Pages;
 
-use App\Filament\Resources\AnnouncementResource;
+use App\Filament\Resources\ArticleResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
-class ListAnnouncements extends ListRecords
+class ListArticles extends ListRecords
 {
-    protected static string $resource = AnnouncementResource::class;
+    protected static string $resource = ArticleResource::class;
 
     public function getTitle(): string
     {
-        return '公告管理';
+        return '文章管理';
     }
 
     protected function getHeaderActions(): array
