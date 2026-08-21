@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LoginRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\WechatService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use RuntimeException;
 
 class AuthController extends Controller
@@ -17,16 +18,15 @@ class AuthController extends Controller
     /**
      * 微信小程序登录：code → openid → 签发 Sanctum Token。
      */
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        $request->validate([
-            'code' => ['required', 'string'],
-        ]);
-
         try {
             $result = $this->wechat->code2Session($request->input('code'));
         } catch (RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 401);
+            return response()->json([
+                'code' => 40100,
+                'message' => $e->getMessage(),
+            ], 401);
         }
 
         // 按 openid 幂等创建/获取用户
@@ -47,19 +47,26 @@ class AuthController extends Controller
         $token = $user->createToken('mini-program')->plainTextToken;
 
         return response()->json([
-            'token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user,
+            'code' => 0,
+            'message' => '登录成功',
+            'data' => [
+                'token' => $token,
+                'token_type' => 'Bearer',
+                'user' => new UserResource($user),
+            ],
         ]);
     }
 
     /**
      * 退出登录：仅吊销当前 Token。
      */
-    public function logout(Request $request): JsonResponse
+    public function logout(\Illuminate\Http\Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => '已退出登录']);
+        return response()->json([
+            'code' => 0,
+            'message' => '已退出登录',
+        ]);
     }
 }

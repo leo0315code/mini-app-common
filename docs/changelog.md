@@ -4,6 +4,26 @@
 
 ---
 
+## [v1.1.0] - 2026-08-21
+
+### 新增
+
+- **用户资料更新**：`PUT /api/user`，支持更新昵称、头像、性别、meta 扩展字段
+- **手机号绑定**：`POST /api/user/phone`，通过微信新版接口获取并绑定手机号
+- **API Resource**：`UserResource` 统一 JSON 响应格式
+- **FormRequest 校验**：`LoginRequest`、`UpdateUserRequest` 参数校验类
+- **全局异常处理**：统一 API 错误响应格式（code + message）
+- **API 限流器**：`AppServiceProvider` 配置每分钟 60 次请求限制
+- **功能测试**：23 个测试用例覆盖登录、用户、手机号接口
+
+### 变更
+
+- 所有 API 响应统一为 `{"code": 0, "message": "...", "data": {...}}` 格式
+- `users` 表新增 `phone` 字段
+- 错误响应增加 `code` 字段（如 40100、42200 等）
+
+---
+
 ## [v1.0.0] - 2026-08-21
 
 首个稳定骨架版本，提供微信小程序通用后台的完整基础能力。

@@ -28,6 +28,7 @@
 | `nickname` | varchar(64) | 可空 | 昵称 |
 | `avatar` | varchar(255) | 可空 | 头像 URL |
 | `gender` | tinyint | 默认 0 | 性别：0未知 / 1男 / 2女 |
+| `phone` | varchar(20) | 可空 | 手机号（解密后存储） |
 | `meta` | json | 可空 | 业务扩展字段（灵活存储） |
 | `email` | varchar(255) | 可空 | 保留（默认迁移字段） |
 | `email_verified_at` | timestamp | 可空 | 保留 |
@@ -52,6 +53,7 @@ Schema::create('users', function (Blueprint $table) {
     $table->string('nickname')->nullable();
     $table->string('avatar')->nullable();
     $table->tinyInteger('gender')->default(0);
+    $table->string('phone', 20)->nullable()->comment('手机号（解密后存储）');
     $table->json('meta')->nullable();
     // 保留 Laravel 默认字段
     $table->string('email')->nullable();

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PhoneController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,5 +21,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 // 受保护接口
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [UserController::class, 'show']);
+    Route::put('/user', [UserController::class, 'update']);
+    Route::post('/user/phone', [PhoneController::class, 'bind']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 });

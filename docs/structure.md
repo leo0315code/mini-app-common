@@ -12,12 +12,17 @@ mini-app-common/
 │   ├── Http/
 │   │   ├── Controllers/
 │   │   │   ├── AuthController.php        # 微信登录 / 退出
-│   │   │   └── UserController.php        # 当前用户
-│   │   └── ...                           # Laravel 默认 Kernel / Middleware
+│   │   │   ├── UserController.php        # 当前用户 / 更新资料
+│   │   │   └── PhoneController.php       # 手机号绑定
+│   │   ├── Requests/
+│   │   │   ├── LoginRequest.php          # 登录参数校验
+│   │   │   └── UpdateUserRequest.php     # 用户更新参数校验
+│   │   └── Resources/
+│   │       └── UserResource.php          # 用户 JSON 响应格式
 │   ├── Models/
-│   │   └── User.php                      # 用户模型（含 openid/meta）
+│   │   └── User.php                      # 用户模型（含 openid/phone/meta）
 │   └── Services/
-│       └── WechatService.php             # 微信 code2session 封装
+│       └── WechatService.php             # 微信 code2session + 手机号解密
 ├── bootstrap/
 │   ├── app.php                           # 应用引导（路由/中间件/异常处理）
 │   └── providers.php                     # 服务提供者注册
@@ -27,6 +32,7 @@ mini-app-common/
 ├── database/
 │   └── migrations/
 │       ├── 0001_..._create_users_table.php       # users（扩展字段）
+│       ├── 2026_..._add_phone_to_users_table.php # 新增 phone 字段
 │       └── 2026_..._create_personal_access_tokens_table.php
 ├── docs/                                 # 📘 本文档集
 │   ├── README.md
@@ -34,7 +40,9 @@ mini-app-common/
 │   ├── config.md
 │   ├── auth.md
 │   ├── database.md
-│   └── structure.md
+│   ├── structure.md
+│   ├── testing.md
+│   └── changelog.md
 ├── public/
 │   ├── index.php                         # 入口
 │   ── .htaccess                         # Apache 伪静态规则
@@ -47,7 +55,12 @@ mini-app-common/
 │   ├── js/app.js                         # 前端 JS 入口
 │   └── views/welcome.blade.php           # 默认欢迎页
 ├── storage/                              # 日志、缓存、上传文件
-├── tests/                                # 测试文件（见 testing.md）
+── tests/                                # 测试文件（见 testing.md）
+│   ├── Feature/
+│   │   ├── AuthTest.php                  # 登录/退出测试
+│   │   ├── UserTest.php                  # 用户接口测试
+│   │   └── PhoneTest.php                 # 手机号绑定测试
+│   └── Unit/
 ├── .env / .env.example                   # 环境变量
 ├── vite.config.js                        # Vite 前端构建配置
 └── composer.json
@@ -66,8 +79,17 @@ mini-app-common/
 - `login(Request)`：接收 `code` → 调 `WechatService` → 按 `openid` `firstOrCreate` → 签发 Sanctum Token。
 - `logout(Request)`：吊销当前 Token。
 
-### `app/Http/Controllers/UserController.php`
-- `show(Request)`：返回 `$request->user()`（需 `auth:sanctum`）。
+### `app/Http/Controllers/PhoneController.php`
+- `bind(Request)`：接收微信 `wx.getPhoneNumber()` 返回的 code → 调 `WechatService::getPhoneNumber()` → 绑定到当前用户。
+
+### `app/Http/Requests/LoginRequest.php`
+登录接口参数校验：`code` 必填、字符串、最大 128 字符。
+
+### `app/Http/Requests/UpdateUserRequest.php`
+用户更新接口参数校验：`nickname`、`avatar`、`gender`、`meta` 可选，各有对应规则。
+
+### `app/Http/Resources/UserResource.php`
+统一用户 JSON 响应格式，包含所有用户字段及时间戳。
 
 ### `app/Models/User.php`
 - 启用 `HasApiTokens` / 配置 `openid` 等可填字段 / `meta` 为 JSON 类型。
