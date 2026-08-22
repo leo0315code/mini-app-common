@@ -42,13 +42,26 @@ jobs:
       - name: Prepare environment
         run: |
           cp .env.example .env
-          php artisan key:generate
+          # key:generate 可能因环境已注入 APP_KEY 而报错退出，这里容错；
+          # 真正的有效 key 由下方 Run tests 的 env 显式注入兜底。
+          php artisan key:generate || true
 
       - name: Run tests
         env:
+          APP_KEY: "base64:tWH/YYsylOo0lJ7sox7Yg7a3R0Xq1Wnsvcp9zBpoD/c="
           DB_CONNECTION: sqlite
           DB_DATABASE: ":memory:"
         run: php artisan test --no-coverage
+
+      - name: Diagnose failure
+        if: failure()
+        run: |
+          echo "=== php artisan --version ==="
+          php artisan --version
+          echo "=== APP_KEY set in env? ==="
+          if [ -n "$APP_KEY" ]; then echo "APP_KEY is set (len=${#APP_KEY})"; else echo "APP_KEY NOT set"; fi
+          echo "=== last 60 lines of test log ==="
+          tail -n 60 storage/logs/*.log 2>/dev/null || echo "no log files"
 
   # 可选：前端构建校验（当前前端仅做资源打包，无测试）
   frontend:
