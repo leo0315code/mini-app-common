@@ -14,9 +14,11 @@ use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -153,8 +155,25 @@ class UserResource extends Resource
                     ->badge()
                     ->separator(',')
                     ->toggleable(),
+                TextColumn::make('status')
+                    ->label('状态')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state): string => $state === User::STATUS_BANNED ? '已封禁' : '正常')
+                    ->color(fn (string $state): string => $state === User::STATUS_BANNED ? 'danger' : 'success')
+                    ->sortable(),
+                TextColumn::make('banned_at')
+                    ->label('封禁时间')
+                    ->dateTime('Y-m-d H:i')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('status')
+                    ->label('状态')
+                    ->options([
+                        User::STATUS_NORMAL => '正常',
+                        User::STATUS_BANNED => '已封禁',
+                    ]),
                 SelectFilter::make('gender')
                     ->label('性别')
                     ->options([
@@ -191,6 +210,37 @@ class UserResource extends Resource
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('ban')
+                    ->label('封禁')
+                    ->icon('heroicon-o-no-symbol')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->visible(fn (User $record): bool => $record->status !== User::STATUS_BANNED)
+                    ->form([
+                        Forms\Components\Textarea::make('ban_reason')
+                            ->label('封禁原因')
+                            ->rows(2),
+                    ])
+                    ->action(function (User $record, array $data): void {
+                        $record->ban($data['ban_reason'] ?? null);
+                        \Filament\Notifications\Notification::make()
+                            ->success()
+                            ->title('已封禁该用户')
+                            ->send();
+                    }),
+                Action::make('unban')
+                    ->label('解封')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->visible(fn (User $record): bool => $record->status === User::STATUS_BANNED)
+                    ->action(function (User $record): void {
+                        $record->unban();
+                        \Filament\Notifications\Notification::make()
+                            ->success()
+                            ->title('已解封该用户')
+                            ->send();
+                    }),
                 DeleteAction::make(),
             ])
             ->toolbarActions([

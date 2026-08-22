@@ -33,9 +33,10 @@
   - 与现有 `Notification` 联动：派发通知时可选同步下发订阅消息（`subscribeMessage.send`）。
   - 需 `access_token` 的获取与缓存（`stable_token`，缓存到 `Setting` 或 Cache）。
 
-### 2. 用户封禁 / 禁用
-- **现状缺口**：`users` 表无 `status` 字段，违规用户无法禁止其登录和调用接口。
-- **落地要点**：加 `status`（normal/banned）+ 后台「封禁/解封」动作；`login`、`upload`、`feedback` 等接口前置校验；封禁时可选撤销其全部 Token（立即踢下线）。
+### 2. 用户封禁 / 禁用 ✅ 已落地（v1.9.0）
+- `users.status`（normal/banned）+ `banned_at` / `ban_reason`；`User::ban()/unban()` 自动吊销全部 Token。
+- 中间件 `EnsureUserNotBanned` 拦截受保护接口（40301）；登录同步校验封禁状态。
+- 后台用户列表「状态」徽标列 + 状态筛选 + 封禁/解封动作。
 
 ### 3. 仪表盘运营维度扩展
 - **现状缺口**：工作台只有用户注册统计（`UserStatsWidget` / 注册趋势 / 性别分布 / 最近注册），运营同学关心的内容与工单数据完全看不到。

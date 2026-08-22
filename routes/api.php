@@ -30,8 +30,8 @@ Route::get('/article-categories', [ArticleController::class, 'categories']);
 Route::get('/articles', [ArticleController::class, 'index']);
 Route::get('/articles/{id}', [ArticleController::class, 'show']);
 
-// 受保护接口
-Route::middleware('auth:sanctum')->group(function () {
+// 受保护接口（auth:banned 在鉴权后拦截已封禁用户）
+Route::middleware(['auth:sanctum', 'auth.banned'])->group(function () {
     Route::get('/user', [UserController::class, 'show']);
     Route::put('/user', [UserController::class, 'update']);
     Route::post('/user/phone', [PhoneController::class, 'bind']);

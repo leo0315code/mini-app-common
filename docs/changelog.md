@@ -4,6 +4,21 @@
 
 ---
 
+## [v1.9.0] - 2026-08-22
+
+用户封禁（`roadmap` P1 第 2 项，改动涉及表结构）：
+
+- **数据表**：`users` 新增 `status`（normal/banned）、`banned_at`、`ban_reason` 字段及 `status` 索引。
+- **模型**：`User` 增加 `isBanned()` / `ban($reason)` / `unban()` / `scopeActive()`；`ban()` 同时撤销该用户全部 API Token（立即踢下线）。
+- **接口拦截**：
+  - 新增中间件 `EnsureUserNotBanned`，挂在 `api` 路由组的 `auth:sanctum` 之后，封禁用户即使持旧 Token 访问受保护接口也返回 `40301 账号已被封禁`。
+  - 登录（`POST /api/auth/login`）校验封禁状态，封禁用户拒绝登录并吊销已有登录态（返回 `40301`）。
+- **后台用户管理**：列表新增「状态」徽标列（正常/已封禁）、按状态筛选；行内新增「封禁 / 解封」动作（带确认，解封仅对封禁用户显示）。
+- **测试**：新增 `tests/Feature/UserBanTest.php`（登录拦截、接口中间件拦截、解封恢复、后台 ban/unban 底层逻辑、列表页动作渲染），全量 **68 passed (181 assertions)**。
+- **注意**：部署需执行 `php artisan migrate`；本地主库（laravel-mini）当前离线，上线时务必先起 MySQL 再迁移。
+
+---
+
 ## [v1.8.0] - 2026-08-21
 
 后台体验打磨（纯 UI/交互，不改表结构）：

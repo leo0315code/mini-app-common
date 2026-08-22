@@ -44,6 +44,16 @@ class AuthController extends Controller
             $user->save();
         }
 
+        // 封禁用户禁止登录并吊销已有登录态
+        if ($user->isBanned()) {
+            $user->tokens()->delete();
+
+            return response()->json([
+                'code' => 40301,
+                'message' => '账号已被封禁'.(filled($user->ban_reason) ? '：'.$user->ban_reason : ''),
+            ], 403);
+        }
+
         $token = $user->createToken('mini-program')->plainTextToken;
 
         return response()->json([

@@ -11,17 +11,24 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Sanctum\PersonalAccessToken;
 
 #[Fillable([
     'openid', 'unionid', 'nickname', 'avatar', 'gender', 'phone', 'meta',
-    'name', 'email', 'password',
+    'name', 'email', 'password', 'status', 'ban_reason',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
+    /**
+     * 账户状态：默认正常。
+     */
+    public const STATUS_NORMAL = 'normal';
+
+    public const STATUS_BANNED = 'banned';
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -95,6 +102,7 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'meta' => 'array',
             'gender' => 'integer',
+            'banned_at' => 'datetime',
         ];
     }
 
@@ -104,5 +112,48 @@ class User extends Authenticatable implements FilamentUser
     public function tokens()
     {
         return $this->morphMany(PersonalAccessToken::class, 'tokenable');
+    }
+
+    /**
+     * 是否已封禁
+     */
+    public function isBanned(): bool
+    {
+        return $this->status === self::STATUS_BANNED;
+    }
+
+    /**
+     * 封禁用户：记录状态/时间/原因，并撤销其全部 API Token（立即踢下线）。
+     */
+    public function ban(string $reason = null): void
+    {
+        $this->forceFill([
+            'status' => self::STATUS_BANNED,
+            'banned_at' => now(),
+            'ban_reason' => $reason,
+        ])->save();
+
+        // 吊销全部登录态，防止封禁后仍持旧 token 调用接口
+        $this->tokens()->delete();
+    }
+
+    /**
+     * 解封用户：恢复正常状态。
+     */
+    public function unban(): void
+    {
+        $this->forceFill([
+            'status' => self::STATUS_NORMAL,
+            'banned_at' => null,
+            'ban_reason' => null,
+        ])->save();
+    }
+
+    /**
+     * 作用域：仅正常用户
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_NORMAL);
     }
 }
