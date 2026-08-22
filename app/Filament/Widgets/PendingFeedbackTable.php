@@ -4,7 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Resources\FeedbackResource;
 use App\Models\Feedback;
-use Filament\Tables;
+use Filament\Actions\Action;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Filament\Tables\Columns\TextColumn;
@@ -62,7 +62,7 @@ class PendingFeedbackTable extends BaseWidget
                     ->dateTime('Y-m-d H:i'),
             ])
             ->actions([
-                Tables\Actions\Action::make('handle')
+                Action::make('handle')
                     ->label('去处理')
                     ->icon('heroicon-o-arrow-right-circle')
                     ->url(fn (Feedback $record): string => FeedbackResource::getUrl('edit', ['record' => $record])),
