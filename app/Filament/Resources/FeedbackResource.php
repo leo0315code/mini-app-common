@@ -203,6 +203,13 @@ class FeedbackResource extends Resource
                             'handled_at' => now(),
                         ]);
 
+                        // 触发微信订阅消息推送（静默失败，不阻塞业务）
+                        try {
+                            app(\App\Services\SubscribeMessageService::class)->pushFeedbackHandled($record);
+                        } catch (\Throwable $e) {
+                            // 忽略推送异常，业务流程不受影响
+                        }
+
                         Notification::make()
                             ->success()
                             ->title('反馈已处理')
@@ -258,11 +265,20 @@ class FeedbackResource extends Resource
                         ->requiresConfirmation()
                         ->deselectRecordsAfterCompletion()
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
-                            $records->each->update([
-                                'status' => Feedback::STATUS_RESOLVED,
-                                'handled_by' => auth()->id(),
-                                'handled_at' => now(),
-                            ]);
+                            $records->each(function (Feedback $feedback) {
+                                $feedback->update([
+                                    'status' => Feedback::STATUS_RESOLVED,
+                                    'handled_by' => auth()->id(),
+                                    'handled_at' => now(),
+                                ]);
+
+                                // 触发微信订阅消息推送（静默失败）
+                                try {
+                                    app(\App\Services\SubscribeMessageService::class)->pushFeedbackHandled($feedback);
+                                } catch (\Throwable $e) {
+                                    // 忽略推送异常
+                                }
+                            });
 
                             Notification::make()
                                 ->success()

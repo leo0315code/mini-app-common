@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'user_id', 'type', 'content', 'contact',
     'status', 'handle_note', 'handled_by', 'handled_at',
+    'subscribe_sent', 'subscribe_sent_at', 'subscribe_result',
 ])]
 class Feedback extends Model
 {
@@ -34,6 +35,8 @@ class Feedback extends Model
     {
         return [
             'handled_at' => 'datetime',
+            'subscribe_sent' => 'boolean',
+            'subscribe_sent_at' => 'datetime',
         ];
     }
 

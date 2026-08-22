@@ -18,6 +18,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
     'targets',
     'published',
     'published_at',
+    'subscribe_sent',
+    'subscribe_sent_at',
+    'subscribe_result',
 ])]
 class Notification extends Model
 {
@@ -30,6 +33,8 @@ class Notification extends Model
             'targets' => 'array',
             'published' => 'boolean',
             'published_at' => 'datetime',
+            'subscribe_sent' => 'boolean',
+            'subscribe_sent_at' => 'datetime',
         ];
     }
 

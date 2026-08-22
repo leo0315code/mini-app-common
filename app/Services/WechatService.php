@@ -18,6 +18,12 @@ class WechatService
     /** 手机号获取接口地址（新版 code 换手机号） */
     protected const GET_PHONE_NUMBER_URL = 'https://api.weixin.qq.com/wxa/business/getuserphonenumber';
 
+    /** 订阅消息发送接口地址 */
+    protected const SUBSCRIBE_MESSAGE_SEND_URL = 'https://api.weixin.qq.com/cgi-bin/message/subscribe/send';
+
+    /** 最大重试次数 */
+    protected const MAX_RETRIES = 2;
+
     /**
      * 用小程序登录 code 换取 openid / unionid / session_key。
      *
@@ -142,5 +148,155 @@ class WechatService
         cache()->put($cacheKey, $token, $expiresIn - 300);
 
         return $token;
+    }
+
+    /**
+     * 强制刷新 access_token（当检测到 token 失效时使用）。
+     */
+    protected function refreshAccessToken(string $appId, string $secret): string
+    {
+        $cacheKey = 'wechat_access_token_' . $appId;
+        cache()->forget($cacheKey);
+
+        return $this->getAccessToken($appId, $secret);
+    }
+
+    /**
+     * 发送微信订阅消息。
+     *
+     * @param string $openid 用户 openid
+     * @param string $templateId 订阅消息模板 ID
+     * @param array $data 模板数据 ['key1' => ['value' => 'xxx'], 'key2' => ['value' => 'yyy']]
+     * @param string|null $page 点击跳转的小程序页面
+     * @param array $options 额外选项：miniprogram_state(developer/trial/formal), lang(zh_CN)
+     * @return array{success: bool, errcode: int, errmsg: string, raw: array}
+     */
+    public function sendSubscribeMessage(
+        string $openid,
+        string $templateId,
+        array $data,
+        ?string $page = null,
+        array $options = [],
+    ): array {
+        $config = config('services.mini_program');
+        $appId = $config['app_id'] ?? null;
+        $secret = $config['secret'] ?? null;
+
+        if (empty($appId) || empty($secret)) {
+            return [
+                'success' => false,
+                'errcode' => -1,
+                'errmsg' => '微信小程序 app_id/secret 未配置',
+                'raw' => [],
+            ];
+        }
+
+        if (empty($templateId)) {
+            return [
+                'success' => false,
+                'errcode' => -2,
+                'errmsg' => '订阅消息模板 ID 未配置',
+                'raw' => [],
+            ];
+        }
+
+        $accessToken = $this->getAccessToken($appId, $secret);
+
+        $payload = [
+            'touser' => $openid,
+            'template_id' => $templateId,
+            'data' => $data,
+        ];
+
+        if ($page !== null && $page !== '') {
+            $payload['page'] = $page;
+        }
+
+        if (isset($options['miniprogram_state'])) {
+            $payload['miniprogram_state'] = $options['miniprogram_state'];
+        }
+
+        if (isset($options['lang'])) {
+            $payload['lang'] = $options['lang'];
+        }
+
+        $lastResult = null;
+
+        for ($attempt = 0; $attempt <= self::MAX_RETRIES; $attempt++) {
+            try {
+                $response = Http::post(
+                    self::SUBSCRIBE_MESSAGE_SEND_URL . '?access_token=' . $accessToken,
+                    $payload
+                );
+
+                if ($response->failed()) {
+                    $lastResult = [
+                        'success' => false,
+                        'errcode' => -3,
+                        'errmsg' => '网络请求失败：HTTP ' . $response->status(),
+                        'raw' => ['body' => $response->body()],
+                    ];
+                    continue;
+                }
+
+                $respData = $response->json();
+                $errcode = (int) ($respData['errcode'] ?? 0);
+
+                // token 过期或无效，刷新后重试一次
+                if (in_array($errcode, [40001, 42001, 40014], true) && $attempt < self::MAX_RETRIES) {
+                    $accessToken = $this->refreshAccessToken($appId, $secret);
+                    continue;
+                }
+
+                if ($errcode === 0) {
+                    return [
+                        'success' => true,
+                        'errcode' => 0,
+                        'errmsg' => 'ok',
+                        'raw' => $respData,
+                    ];
+                }
+
+                // 常见订阅消息错误码处理
+                $errmsg = $respData['errmsg'] ?? 'unknown';
+                if ($errcode === 43101) {
+                    $errmsg = '用户未订阅该模板消息（43101）';
+                } elseif ($errcode === 40037) {
+                    $errmsg = '模板 ID 不正确（40037）';
+                } elseif ($errcode === 41028) {
+                    $errmsg = 'form_id 不正确或已过期（41028）';
+                } elseif ($errcode === 41029) {
+                    $errmsg = 'form_id 已被使用（41029）';
+                } elseif ($errcode === 41030) {
+                    $errmsg = 'page 不正确（41030）';
+                } elseif ($errcode === 40003) {
+                    $errmsg = 'openid 不正确（40003）';
+                }
+
+                $lastResult = [
+                    'success' => false,
+                    'errcode' => $errcode,
+                    'errmsg' => $errmsg,
+                    'raw' => $respData,
+                ];
+
+                // 非 token 错误不重试
+                break;
+            } catch (\Throwable $e) {
+                $lastResult = [
+                    'success' => false,
+                    'errcode' => -4,
+                    'errmsg' => '发送异常：' . $e->getMessage(),
+                    'raw' => ['exception' => get_class($e)],
+                ];
+            }
+        }
+
+        return $lastResult ?? [
+            'success' => false,
+            'errcode' => -5,
+            'errmsg' => '未知错误',
+            'raw' => [],
+        ];
     }
 }

@@ -65,6 +65,8 @@ class SystemConfig extends Page
             'mini_program' => Setting::getGroup('mini_program', [
                 'app_id' => config('services.mini_program.app_id', ''),
                 'secret' => config('services.mini_program.secret', ''),
+                'feedback_template_id' => config('services.mini_program.feedback_template_id', ''),
+                'announcement_template_id' => config('services.mini_program.announcement_template_id', ''),
             ]),
             'cors' => Setting::getGroup('cors', [
                 'allowed_origins' => config('cors.allowed_origins')[0] ?? '*',
@@ -91,7 +93,7 @@ class SystemConfig extends Page
         return $schema
             ->components([
                 Section::make('微信小程序')
-                    ->description('小程序 app_id / secret，用于 code2session 与手机号解密。')
+                    ->description('小程序 app_id / secret，用于 code2session 与手机号解密；订阅消息模板 ID 用于反馈处理和公告发布推送。')
                     ->schema([
                         Grid::make(2)->schema([
                             TextInput::make('mini_program.app_id')
@@ -101,6 +103,14 @@ class SystemConfig extends Page
                                 ->label('AppSecret')
                                 ->password()
                                 ->required(),
+                            TextInput::make('mini_program.feedback_template_id')
+                                ->label('反馈处理模板 ID')
+                                ->placeholder('填写微信公众平台创建的订阅消息模板ID')
+                                ->helperText('用户反馈被处理后，推送处理结果通知'),
+                            TextInput::make('mini_program.announcement_template_id')
+                                ->label('公告发布模板 ID')
+                                ->placeholder('填写微信公众平台创建的订阅消息模板ID')
+                                ->helperText('后台发布新公告时，按范围推送给用户'),
                         ]),
                     ]),
 
@@ -182,7 +192,8 @@ class SystemConfig extends Page
         config([
             'services.mini_program.app_id' => $data['mini_program']['app_id'] ?? null,
             'services.mini_program.secret' => $data['mini_program']['secret'] ?? null,
-
+            'services.mini_program.feedback_template_id' => $data['mini_program']['feedback_template_id'] ?? null,
+            'services.mini_program.announcement_template_id' => $data['mini_program']['announcement_template_id'] ?? null,
         ]);
 
         $origins = trim((string) ($data['cors']['allowed_origins'] ?? ''));
