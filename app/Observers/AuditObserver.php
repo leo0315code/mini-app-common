@@ -7,6 +7,8 @@ use App\Models\Article;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Feedback;
+use App\Models\Menu;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\Audit;
 
@@ -15,12 +17,6 @@ use App\Services\Audit;
  */
 class AuditObserver
 {
-    /**
-     * 计算可审计的字段差异。
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @return array{old: array<string, mixed>, new: array<string, mixed>}
-     */
     protected static function diff($model): array
     {
         $dirty = $model->getDirty();
@@ -46,15 +42,26 @@ class AuditObserver
             Category::class => 'category',
             Feedback::class => 'feedback',
             User::class => 'user',
+            Role::class => 'role',
+            Menu::class => 'menu',
             default => 'system',
         };
     }
 
+    protected static function isAuditable($model): bool
+    {
+        return $model instanceof Announcement
+            || $model instanceof Article
+            || $model instanceof Category
+            || $model instanceof Feedback
+            || $model instanceof User
+            || $model instanceof Role
+            || $model instanceof Menu;
+    }
+
     public function created($model): void
     {
-        if (! $model instanceof Announcement && ! $model instanceof Article
-            && ! $model instanceof Category && ! $model instanceof Feedback
-            && ! $model instanceof User) {
+        if (! self::isAuditable($model)) {
             return;
         }
 
@@ -72,9 +79,7 @@ class AuditObserver
 
     public function updated($model): void
     {
-        if (! $model instanceof Announcement && ! $model instanceof Article
-            && ! $model instanceof Category && ! $model instanceof Feedback
-            && ! $model instanceof User) {
+        if (! self::isAuditable($model)) {
             return;
         }
 
@@ -96,9 +101,7 @@ class AuditObserver
 
     public function deleted($model): void
     {
-        if (! $model instanceof Announcement && ! $model instanceof Article
-            && ! $model instanceof Category && ! $model instanceof Feedback
-            && ! $model instanceof User) {
+        if (! self::isAuditable($model)) {
             return;
         }
 
@@ -109,5 +112,30 @@ class AuditObserver
             oldData: $model->getOriginal(),
             subject: $model,
         );
+    }
+
+    public function synced($model, string $relation, array $changes): void
+    {
+        if ($model instanceof Role && $relation === 'menus') {
+            Audit::log(
+                type: 'permission',
+                module: 'role',
+                action: '同步角色权限 #' . $model->getKey(),
+                oldData: $changes['old'] ?? [],
+                newData: $changes['new'] ?? [],
+                subject: $model,
+            );
+        }
+
+        if ($model instanceof Menu && $relation === 'roles') {
+            Audit::log(
+                type: 'permission',
+                module: 'menu',
+                action: '同步菜单角色 #' . $model->getKey(),
+                oldData: $changes['old'] ?? [],
+                newData: $changes['new'] ?? [],
+                subject: $model,
+            );
+        }
     }
 }

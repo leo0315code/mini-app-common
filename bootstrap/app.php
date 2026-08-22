@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'auth.banned' => \App\Http\Middleware\EnsureUserNotBanned::class,
+            'menu.permission' => \App\Http\Middleware\CheckMenuPermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

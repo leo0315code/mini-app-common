@@ -15,11 +15,20 @@ class Menu extends Model
     protected static function booted(): void
     {
         static::created(function (self $menu) {
-            // 自动将新菜单分配给所有“超级管理员”角色
             $superAdminRoles = Role::query()->where('slug', 'super-admin')->get();
             foreach ($superAdminRoles as $role) {
                 $role->menus()->syncWithoutDetaching([$menu->id]);
             }
+        });
+
+        static::deleting(function (self $menu) {
+            // 级联删除子菜单
+            $menu->children()->each(function ($child) {
+                $child->delete();
+            });
+
+            // 清理角色菜单关联（使用 delete 而非 detach，触发模型事件）
+            $menu->roles()->detach();
         });
     }
 
