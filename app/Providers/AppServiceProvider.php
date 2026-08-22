@@ -11,6 +11,7 @@ use App\Models\Media;
 use App\Models\Menu;
 use App\Models\Notification;
 use App\Models\Role;
+use App\Models\SubscribeMessageFailure;
 use App\Models\User;
 use App\Policies\AnnouncementPolicy;
 use App\Policies\ArticlePolicy;
@@ -21,6 +22,7 @@ use App\Policies\MenuPolicy;
 use App\Policies\MediaPolicy;
 use App\Policies\NotificationPolicy;
 use App\Policies\RolePolicy;
+use App\Policies\SubscribeMessageFailurePolicy;
 use App\Policies\UserPolicy;
 use App\Observers\AuditObserver;
 use App\Observers\PermissionCacheObserver;
@@ -72,5 +74,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
         Gate::policy(Media::class, MediaPolicy::class);
         Gate::policy(Notification::class, NotificationPolicy::class);
+        Gate::policy(SubscribeMessageFailure::class, SubscribeMessageFailurePolicy::class);
     }
 }
