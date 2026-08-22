@@ -36,4 +36,24 @@ class Role extends Model
         return $this->belongsToMany(Menu::class)
             ->withTimestamps();
     }
+
+    public function getPermissionsAttribute(): array
+    {
+        return $this->menus
+            ->pluck('permission')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function getMenuSlugsAttribute(): array
+    {
+        return $this->menus
+            ->pluck('slug')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
 }

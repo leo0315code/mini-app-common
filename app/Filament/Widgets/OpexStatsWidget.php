@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Models\Feedback;
 use App\Models\Media;
 use App\Models\User;
+use App\Support\HasWidgetPermission;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +13,14 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class OpexStatsWidget extends BaseWidget
 {
+    use HasWidgetPermission;
+
     protected static ?int $sort = 2;
+
+    protected static function getWidgetPermissions(): array
+    {
+        return ['dashboard.view', 'feedback.view', 'user.view'];
+    }
 
     protected function getStats(): array
     {

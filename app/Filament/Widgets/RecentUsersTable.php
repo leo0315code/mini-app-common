@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Pages\Dashboard;
 use App\Models\User;
+use App\Support\HasWidgetPermission;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -12,6 +13,8 @@ use Filament\Tables\Columns\ImageColumn;
 
 class RecentUsersTable extends BaseWidget
 {
+    use HasWidgetPermission;
+
     public ?array $pageFilters = null;
 
     protected static ?string $heading = '最近注册用户';
@@ -19,6 +22,11 @@ class RecentUsersTable extends BaseWidget
     protected static ?int $sort = 4;
 
     protected int | string | array $columnSpan = 'full';
+
+    protected static function getWidgetPermissions(): array
+    {
+        return ['user.view', 'dashboard.view'];
+    }
 
     public function table(Table $table): Table
     {

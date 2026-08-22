@@ -86,15 +86,24 @@ class MenuResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('id')->label('ID')->sortable(),
+                TextColumn::make('id')->label('ID')->sortable()->toggleable(),
                 TextColumn::make('name')
                     ->label('菜单名称')
                     ->searchable()
-                    ->sortable(),
-                TextColumn::make('parent.name')
-                    ->label('父级')
                     ->sortable()
-                    ->placeholder('—'),
+                    ->formatStateUsing(function (string $state, $record) {
+                        $depth = $record->depth;
+                        if ($depth === 0) {
+                            return $state;
+                        }
+
+                        return str_repeat('　', $depth) . '<span class="text-gray-400">└</span> ' . $state;
+                    })
+                    ->html(),
+                TextColumn::make('lineage')
+                    ->label('层级路径')
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('icon')
                     ->label('图标')
                     ->badge()

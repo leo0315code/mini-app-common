@@ -3,24 +3,53 @@
 namespace App\Support;
 
 use App\Models\Menu;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 class MenuCascadeService
 {
+    protected string $childrenMapCacheKey = 'menu_cascade_children';
+
+    protected string $menuOptionsCacheKey = 'menu_cascade_options';
+
+    protected int $cacheTtl = 3600;
+
     protected array $childrenMap = [];
+
+    protected bool $loaded = false;
 
     public function __construct()
     {
-        $this->rebuildCache();
+        $this->loadFromCache();
     }
 
-    protected function rebuildCache(): void
+    protected function loadFromCache(): void
     {
-        $this->childrenMap = [];
-
-        foreach (Menu::query()->active()->whereNotNull('parent_id')->get() as $menu) {
-            $this->childrenMap[$menu->parent_id][] = $menu->id;
+        if ($this->loaded) {
+            return;
         }
+
+        $hasTable = Schema::hasTable('menus');
+        if (! $hasTable) {
+            $this->loaded = true;
+
+            return;
+        }
+
+        $this->childrenMap = Cache::remember(
+            $this->childrenMapCacheKey,
+            $this->cacheTtl,
+            function () {
+                $map = [];
+                foreach (Menu::query()->active()->whereNotNull('parent_id')->get() as $menu) {
+                    $map[$menu->parent_id][] = $menu->id;
+                }
+
+                return $map;
+            },
+        );
+
+        $this->loaded = true;
     }
 
     public function getDescendants(int $id): array
@@ -85,29 +114,48 @@ class MenuCascadeService
 
     public function getMenuOptions(): array
     {
-        $menus = Menu::query()->active()->orderBy('sort_order')->get();
-
-        $children = [];
-        foreach ($menus as $menu) {
-            $children[$menu->parent_id][] = $menu;
+        $hasTable = Schema::hasTable('menus');
+        if (! $hasTable) {
+            return [];
         }
 
-        $options = [];
-        $walk = function ($parentId, int $level) use (&$walk, $children, &$options): void {
-            foreach ($children[$parentId] ?? [] as $menu) {
-                $options[$menu->id] = $level === 0
-                    ? $menu->name
-                    : str_repeat('　', $level) . '└ ' . $menu->name;
-                $walk($menu->id, $level + 1);
-            }
-        };
-        $walk(null, 0);
+        return Cache::remember(
+            $this->menuOptionsCacheKey,
+            $this->cacheTtl,
+            function () {
+                $menus = Menu::query()->active()->orderBy('sort_order')->get();
 
-        return $options;
+                $children = [];
+                foreach ($menus as $menu) {
+                    $children[$menu->parent_id][] = $menu;
+                }
+
+                $options = [];
+                $walk = function ($parentId, int $level) use (&$walk, $children, &$options): void {
+                    foreach ($children[$parentId] ?? [] as $menu) {
+                        $options[$menu->id] = $level === 0
+                            ? $menu->name
+                            : str_repeat('　', $level) . '└ ' . $menu->name;
+                        $walk($menu->id, $level + 1);
+                    }
+                };
+                $walk(null, 0);
+
+                return $options;
+            },
+        );
     }
 
     public function refresh(): void
     {
-        $this->rebuildCache();
+        $this->clearCache();
+        $this->loaded = false;
+        $this->loadFromCache();
+    }
+
+    public function clearCache(): void
+    {
+        Cache::forget($this->childrenMapCacheKey);
+        Cache::forget($this->menuOptionsCacheKey);
     }
 }

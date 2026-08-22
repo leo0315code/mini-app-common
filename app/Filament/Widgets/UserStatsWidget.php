@@ -4,14 +4,22 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Pages\Dashboard;
 use App\Models\User;
+use App\Support\HasWidgetPermission;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class UserStatsWidget extends BaseWidget
 {
+    use HasWidgetPermission;
+
     public ?array $pageFilters = null;
 
     protected static ?int $sort = 1;
+
+    protected static function getWidgetPermissions(): array
+    {
+        return ['dashboard.view', 'user.view'];
+    }
 
     protected function getStats(): array
     {

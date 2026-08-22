@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Menu;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\MenuCascadeService;
 use App\Support\MenuPermissionManager;
 
 class PermissionCacheObserver
@@ -64,6 +65,7 @@ class PermissionCacheObserver
     protected function clearAllCaches(): void
     {
         app(MenuPermissionManager::class)->clearAllCache();
+        app(MenuCascadeService::class)->clearCache();
     }
 
     protected function clearUserCache(User $user): void

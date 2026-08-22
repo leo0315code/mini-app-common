@@ -9,6 +9,7 @@ use App\Filament\Widgets\PendingFeedbackTable;
 use App\Filament\Widgets\RecentUsersTable;
 use App\Filament\Widgets\UserRegistrationChart;
 use App\Filament\Widgets\UserStatsWidget;
+use App\Support\MenuPermissionManager;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Pages\Dashboard as BaseDashboard;
@@ -19,6 +20,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\UnorderedList;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Auth;
 
 class Dashboard extends BaseDashboard
 {
@@ -27,6 +29,23 @@ class Dashboard extends BaseDashboard
     protected static ?string $navigationLabel = '工作台';
 
     protected static ?int $navigationSort = -2;
+
+    public static function canAccess(): bool
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        $manager = app(MenuPermissionManager::class);
+
+        return $manager->hasAnyPermission($user, ['dashboard.view', 'dashboard.manage']);
+    }
 
     /** 时间范围选项：key => 天数（null 表示全部） */
     public static array $rangeOptions = [

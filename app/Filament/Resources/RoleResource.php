@@ -67,6 +67,7 @@ class RoleResource extends Resource
 
                                         $preset = $presets[$state];
                                         $menuIds = RolePresetTemplates::getMenuIdsForPermissions($preset['permissions']);
+                                        $menuIds = app(MenuCascadeService::class)->ensureCascadeConsistency($menuIds);
 
                                         $set('name', $preset['name']);
                                         $set('slug', $preset['slug'] . '_' . time());
@@ -103,7 +104,7 @@ class RoleResource extends Resource
                                         $result = app(MenuCascadeService::class)->cascadeSelection($state, $old);
                                         $component->state($result);
                                     })
-                                    ->helperText('勾选父级菜单后自动勾选其全部子级；支持搜索过滤菜单'),
+                                    ->helperText('勾选父级自动勾选子级；取消父级自动取消子级。支持搜索和全选/反选。'),
                             ]),
                     ]),
             ]);

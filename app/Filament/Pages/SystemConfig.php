@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Support\MenuPermissionManager;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -13,6 +14,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Forms\Components\TextInput;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 use BackedEnum;
 
@@ -27,6 +29,23 @@ class SystemConfig extends Page
     protected static ?int $navigationSort = 3;
 
     protected static ?string $title = '系统配置';
+
+    public static function canAccess(): bool
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        $manager = app(MenuPermissionManager::class);
+
+        return $manager->hasAnyPermission($user, ['settings.view', 'settings.manage']);
+    }
 
     /** @var array<string, mixed> */
     public ?array $data = [];

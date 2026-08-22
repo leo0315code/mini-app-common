@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Resources\FeedbackResource;
 use App\Models\Feedback;
+use App\Support\HasWidgetPermission;
 use Filament\Actions\Action;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -11,6 +12,8 @@ use Filament\Tables\Columns\TextColumn;
 
 class PendingFeedbackTable extends BaseWidget
 {
+    use HasWidgetPermission;
+
     protected static ?string $heading = '待处理反馈';
 
     protected static ?string $description = '最新的 pending 状态用户反馈，点击可进入处理';
@@ -18,6 +21,11 @@ class PendingFeedbackTable extends BaseWidget
     protected static ?int $sort = 5;
 
     protected int | string | array $columnSpan = 'full';
+
+    protected static function getWidgetPermissions(): array
+    {
+        return ['feedback.view', 'dashboard.view'];
+    }
 
     protected function getTableQuery(): \Illuminate\Database\Eloquent\Builder
     {

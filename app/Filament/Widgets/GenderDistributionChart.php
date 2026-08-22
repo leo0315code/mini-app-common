@@ -4,16 +4,24 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Pages\Dashboard;
 use App\Models\User;
+use App\Support\HasWidgetPermission;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\DB;
 
 class GenderDistributionChart extends ChartWidget
 {
+    use HasWidgetPermission;
+
     public ?array $pageFilters = null;
 
     protected ?string $heading = '用户性别分布';
 
     protected static ?int $sort = 3;
+
+    protected static function getWidgetPermissions(): array
+    {
+        return ['dashboard.view', 'user.view'];
+    }
 
     protected function getData(): array
     {

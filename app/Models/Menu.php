@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\MenuCascadeService;
 use App\Support\MenuPermissionManager;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,21 +34,19 @@ class Menu extends Model
                 $role->menus()->syncWithoutDetaching([$menu->id]);
             }
 
-            // 新增菜单后立即清除所有权限缓存，确保 super-admin 用户立刻获得新菜单
             app(MenuPermissionManager::class)->clearAllCache();
+            app(MenuCascadeService::class)->clearCache();
         });
 
         static::deleting(function (self $menu) {
-            // 级联删除子菜单
             $menu->children()->each(function ($child) {
                 $child->delete();
             });
 
-            // 清理角色菜单关联
             $menu->roles()->detach();
 
-            // 清除权限缓存
             app(MenuPermissionManager::class)->clearAllCache();
+            app(MenuCascadeService::class)->clearCache();
         });
     }
 
@@ -106,5 +105,30 @@ class Menu extends Model
             }
             return [$menu->id => $label];
         });
+    }
+
+    public function getDepthAttribute(): int
+    {
+        $depth = 0;
+        $current = $this;
+        while ($current->parent_id !== null) {
+            $depth++;
+            $current = $current->parent;
+        }
+
+        return $depth;
+    }
+
+    public function getLineageAttribute(): string
+    {
+        $parts = [];
+        $current = $this;
+        while ($current && $current->parent_id !== null) {
+            $parts[] = $current->name;
+            $current = $current->parent;
+        }
+        $parts[] = $current?->name ?? '';
+
+        return implode(' / ', array_reverse($parts));
     }
 }

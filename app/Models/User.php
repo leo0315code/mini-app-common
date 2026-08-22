@@ -81,6 +81,22 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * 获取用户所有权限标识（聚合所有角色的菜单权限）
+     */
+    public function getPermissionsAttribute(): array
+    {
+        return app(\App\Support\MenuPermissionManager::class)->getUserPermissions($this);
+    }
+
+    /**
+     * 获取用户所有菜单 slug
+     */
+    public function getMenuSlugsAttribute(): array
+    {
+        return app(\App\Support\MenuPermissionManager::class)->getUserMenuSlugs($this);
+    }
+
+    /**
      * 指派角色（按 slug）。
      * 仅添加角色，不清除已有角色；变更后立即清除权限缓存。
      */
