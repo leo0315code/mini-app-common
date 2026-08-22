@@ -76,14 +76,10 @@ class RolePresetTemplates
 
         $preset = $presets[$presetKey];
 
-        $menuIds = Menu::query()
-            ->whereIn('permission', $preset['permissions'])
-            ->pluck('id')
-            ->toArray();
+        $menuIds = static::getMenuIdsForPermissions($preset['permissions']);
+        $menuIds = app(MenuCascadeService::class)->ensureCascadeConsistency($menuIds);
 
         $role->menus()->sync($menuIds);
-
-        app(MenuPermissionManager::class)->clearUserCache($role);
 
         return true;
     }
@@ -103,14 +99,10 @@ class RolePresetTemplates
             'description' => $overrides['description'] ?? $preset['description'],
         ]);
 
-        $menuIds = Menu::query()
-            ->whereIn('permission', $preset['permissions'])
-            ->pluck('id')
-            ->toArray();
+        $menuIds = static::getMenuIdsForPermissions($preset['permissions']);
+        $menuIds = app(MenuCascadeService::class)->ensureCascadeConsistency($menuIds);
 
         $role->menus()->sync($menuIds);
-
-        app(MenuPermissionManager::class)->clearUserCache($role);
 
         return $role;
     }

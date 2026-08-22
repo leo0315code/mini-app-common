@@ -17,6 +17,8 @@ use App\Services\Audit;
  */
 class AuditObserver
 {
+    protected array $syncedRelations = [];
+
     protected static function diff($model): array
     {
         $dirty = $model->getDirty();
@@ -116,39 +118,61 @@ class AuditObserver
 
     public function synced($model, string $relation, array $changes): void
     {
+        $key = get_class($model) . ':' . $model->getKey() . ':' . $relation;
+        $this->syncedRelations[$key] = true;
+
         $attached = $changes['attached'] ?? [];
         $detached = $changes['detached'] ?? [];
-        $updated = $changes['updated'] ?? [];
+
+        if (empty($attached) && empty($detached)) {
+            return;
+        }
 
         $newIds = $this->getRelatedIds($model, $relation);
         $oldIds = $this->deriveOldIds($newIds, $attached, $detached);
 
-        $oldData = [
-            'ids' => $oldIds,
-            'attached' => $attached,
-            'detached' => $detached,
-            'updated' => $updated,
-        ];
-
-        $newData = [
-            'ids' => $newIds,
-        ];
+        $oldData = ['ids' => $oldIds, 'attached' => $attached, 'detached' => $detached];
+        $newData = ['ids' => $newIds];
 
         $module = static::resolveModule($model, $relation);
         $action = match ($relation) {
-            'menus' => '同步角色权限 #',
-            'roles' => '同步菜单/用户角色 #',
-            default => '同步关联 #',
+            'menus' => '同步角色权限',
+            'roles' => '同步菜单/用户角色',
+            default => '同步关联',
         };
 
         Audit::log(
             type: 'permission',
             module: $module,
-            action: $action . $model->getKey(),
+            action: $action . ' #' . $model->getKey(),
             oldData: $oldData,
             newData: $newData,
             subject: $model,
         );
+    }
+
+    public function attached($model, string $relation, array $pivotIds): void
+    {
+        $key = get_class($model) . ':' . $model->getKey() . ':' . $relation;
+        if (isset($this->syncedRelations[$key])) {
+            unset($this->syncedRelations[$key]);
+
+            return;
+        }
+
+        $this->logPivotChange($model, $relation, $pivotIds, [], 'attach');
+    }
+
+    public function detached($model, string $relation, array $pivotIds): void
+    {
+        $key = get_class($model) . ':' . $model->getKey() . ':' . $relation;
+        if (isset($this->syncedRelations[$key])) {
+            unset($this->syncedRelations[$key]);
+
+            return;
+        }
+
+        $this->logPivotChange($model, $relation, [], $pivotIds, 'detach');
     }
 
     protected function deriveOldIds(array $newIds, array $attached, array $detached): array
@@ -164,16 +188,6 @@ class AuditObserver
         $query = $model->$relation();
 
         return $query->pluck($query->getRelated()->getKeyName())->all();
-    }
-
-    public function attached($model, string $relation, array $pivotIds): void
-    {
-        $this->logPivotChange($model, $relation, $pivotIds, [], 'attach');
-    }
-
-    public function detached($model, string $relation, array $pivotIds): void
-    {
-        $this->logPivotChange($model, $relation, [], $pivotIds, 'detach');
     }
 
     protected function logPivotChange($model, string $relation, array $attached, array $detached, string $type): void

@@ -11,6 +11,10 @@ class MenuPermissionManager
 {
     protected string $cachePrefix = 'user_permissions_';
 
+    protected string $cacheTag = 'user_permissions';
+
+    protected string $cascadeCacheTag = 'menu_cascade';
+
     protected int $cacheTtl = 3600;
 
     public function getUserPermissions(User $user): array
@@ -19,9 +23,7 @@ class MenuPermissionManager
             return ['*'];
         }
 
-        $hasTable = Schema::hasTable('roles')
-            && Schema::hasTable('menus')
-            && Schema::hasTable('menu_role');
+        $hasTable = $this->tablesReady();
 
         if (! $hasTable) {
             return ['*'];
@@ -33,7 +35,7 @@ class MenuPermissionManager
             return ['*'];
         }
 
-        return Cache::remember(
+        return Cache::tags($this->cacheTag)->remember(
             $this->cachePrefix.$user->id,
             $this->cacheTtl,
             function () use ($user) {
@@ -89,9 +91,7 @@ class MenuPermissionManager
             return ['*'];
         }
 
-        $hasTable = Schema::hasTable('roles')
-            && Schema::hasTable('menus')
-            && Schema::hasTable('menu_role');
+        $hasTable = $this->tablesReady();
 
         if (! $hasTable) {
             return ['*'];
@@ -103,7 +103,7 @@ class MenuPermissionManager
             return ['*'];
         }
 
-        return Cache::remember(
+        return Cache::tags($this->cacheTag)->remember(
             $this->cachePrefix.'slugs_'.$user->id,
             $this->cacheTtl,
             function () use ($user) {
@@ -139,18 +139,22 @@ class MenuPermissionManager
 
     public function clearAllCache(): void
     {
-        $hasTable = Schema::hasTable('roles')
+        Cache::tags($this->cacheTag)->flush();
+        Cache::tags($this->cascadeCacheTag)->flush();
+    }
+
+    protected function tablesReady(): bool
+    {
+        static $cached = null;
+
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $cached = Schema::hasTable('roles')
             && Schema::hasTable('menus')
             && Schema::hasTable('menu_role');
 
-        if (! $hasTable) {
-            return;
-        }
-
-        $userIds = \App\Models\User::query()->pluck('id');
-        foreach ($userIds as $userId) {
-            Cache::forget($this->cachePrefix.$userId);
-            Cache::forget($this->cachePrefix.'slugs_'.$userId);
-        }
+        return $cached;
     }
 }

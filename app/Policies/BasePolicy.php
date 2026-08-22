@@ -5,12 +5,17 @@ namespace App\Policies;
 use App\Models\User;
 use App\Support\MenuPermissionManager;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Support\Facades\Schema;
 
 abstract class BasePolicy
 {
     use HandlesAuthorization;
 
     protected string $permissionPrefix = '';
+
+    protected bool $schemaChecked = false;
+
+    protected bool $tablesReady = false;
 
     public function __construct(
         protected MenuPermissionManager $permissionManager,
@@ -22,9 +27,14 @@ abstract class BasePolicy
             return true;
         }
 
-        if (! \Illuminate\Support\Facades\Schema::hasTable('roles')
-            || ! \Illuminate\Support\Facades\Schema::hasTable('menus')
-            || ! \Illuminate\Support\Facades\Schema::hasTable('menu_role')) {
+        if (! $this->schemaChecked) {
+            $this->tablesReady = Schema::hasTable('roles')
+                && Schema::hasTable('menus')
+                && Schema::hasTable('menu_role');
+            $this->schemaChecked = true;
+        }
+
+        if (! $this->tablesReady) {
             return null;
         }
 

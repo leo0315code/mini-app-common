@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Schema;
 
 class MenuCascadeService
 {
+    protected string $cacheTag = 'menu_cascade';
+
     protected string $childrenMapCacheKey = 'menu_cascade_children';
 
     protected string $menuOptionsCacheKey = 'menu_cascade_options';
@@ -29,14 +31,13 @@ class MenuCascadeService
             return;
         }
 
-        $hasTable = Schema::hasTable('menus');
-        if (! $hasTable) {
+        if (! Schema::hasTable('menus')) {
             $this->loaded = true;
 
             return;
         }
 
-        $this->childrenMap = Cache::remember(
+        $this->childrenMap = Cache::tags($this->cacheTag)->remember(
             $this->childrenMapCacheKey,
             $this->cacheTtl,
             function () {
@@ -114,12 +115,11 @@ class MenuCascadeService
 
     public function getMenuOptions(): array
     {
-        $hasTable = Schema::hasTable('menus');
-        if (! $hasTable) {
+        if (! Schema::hasTable('menus')) {
             return [];
         }
 
-        return Cache::remember(
+        return Cache::tags($this->cacheTag)->remember(
             $this->menuOptionsCacheKey,
             $this->cacheTtl,
             function () {
@@ -155,7 +155,6 @@ class MenuCascadeService
 
     public function clearCache(): void
     {
-        Cache::forget($this->childrenMapCacheKey);
-        Cache::forget($this->menuOptionsCacheKey);
+        Cache::tags($this->cacheTag)->flush();
     }
 }
