@@ -7,7 +7,9 @@ use App\Models\Article;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Feedback;
+use App\Models\Media;
 use App\Models\Menu;
+use App\Models\Notification;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Audit;
@@ -43,6 +45,8 @@ class AuditObserver
             Article::class => 'article',
             Category::class => 'category',
             Feedback::class => 'feedback',
+            Notification::class => 'notification',
+            Media::class => 'media',
             User::class => 'user',
             Role::class => 'role',
             Menu::class => 'menu',
@@ -56,6 +60,8 @@ class AuditObserver
             || $model instanceof Article
             || $model instanceof Category
             || $model instanceof Feedback
+            || $model instanceof Notification
+            || $model instanceof Media
             || $model instanceof User
             || $model instanceof Role
             || $model instanceof Menu;

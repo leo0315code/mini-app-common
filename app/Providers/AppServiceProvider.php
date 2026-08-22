@@ -7,10 +7,11 @@ use App\Models\Article;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Feedback;
-use App\Models\Notification;
-use App\Models\User;
-use App\Models\Role;
+use App\Models\Media;
 use App\Models\Menu;
+use App\Models\Notification;
+use App\Models\Role;
+use App\Models\User;
 use App\Policies\AnnouncementPolicy;
 use App\Policies\ArticlePolicy;
 use App\Policies\AuditLogPolicy;
@@ -47,6 +48,8 @@ class AppServiceProvider extends ServiceProvider
         Article::observe(AuditObserver::class);
         Category::observe(AuditObserver::class);
         Feedback::observe(AuditObserver::class);
+        Notification::observe(AuditObserver::class);
+        Media::observe(AuditObserver::class);
         Role::observe(AuditObserver::class);
         Menu::observe(AuditObserver::class);
 
