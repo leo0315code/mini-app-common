@@ -49,3 +49,36 @@ Route::middleware(['auth:sanctum', 'auth.banned'])->group(function () {
     Route::post('/upload', [MediaController::class, 'upload']);
 });
 
+/*
+|--------------------------------------------------------------------------
+| 管理员 API 接口（基于菜单权限保护）
+|--------------------------------------------------------------------------
+|
+| 以下接口受 auth:sanctum + auth.banned + menu.permission 三重保护。
+| 只有拥有对应菜单权限的后台账号才能访问。
+|
+| 中间件用法：menu.permission:article.view,article.manage
+| 表示需要至少拥有 article.view 或 article.manage 权限之一。
+|
+*/
+
+Route::middleware(['auth:sanctum', 'auth.banned', 'menu.permission'])->group(function () {
+    // 只读接口：拥有对应菜单的 .view 权限即可访问
+    Route::middleware('menu.permission:article.view')->group(function () {
+        // Route::get('/admin/articles', [AdminArticleController::class, 'index']);
+    });
+
+    // 写操作：需要 .manage 权限
+    Route::middleware('menu.permission:article.manage')->group(function () {
+        // Route::post('/admin/articles', [AdminArticleController::class, 'store']);
+        // Route::put('/admin/articles/{id}', [AdminArticleController::class, 'update']);
+        // Route::delete('/admin/articles/{id}', [AdminArticleController::class, 'destroy']);
+    });
+
+    // 系统管理：需要 menu.manage 或 role.manage 权限
+    Route::middleware('menu.permission:menu.manage,role.manage')->group(function () {
+        // Route::get('/admin/roles', [AdminRoleController::class, 'index']);
+        // Route::post('/admin/roles', [AdminRoleController::class, 'store']);
+    });
+});
+

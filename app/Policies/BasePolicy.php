@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\User;
+use App\Support\MenuPermissionManager;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 abstract class BasePolicy
@@ -10,6 +11,10 @@ abstract class BasePolicy
     use HandlesAuthorization;
 
     protected string $permissionPrefix = '';
+
+    public function __construct(
+        protected MenuPermissionManager $permissionManager,
+    ) {}
 
     public function before(User $user, string $ability): ?bool
     {
@@ -20,6 +25,10 @@ abstract class BasePolicy
         if (! \Illuminate\Support\Facades\Schema::hasTable('roles')
             || ! \Illuminate\Support\Facades\Schema::hasTable('menus')
             || ! \Illuminate\Support\Facades\Schema::hasTable('menu_role')) {
+            return null;
+        }
+
+        if ($user->roles()->count() === 0) {
             return null;
         }
 
@@ -64,54 +73,11 @@ abstract class BasePolicy
 
     protected function hasAnyPermission(User $user, array $permissions): bool
     {
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
-
-        $hasTable = \Illuminate\Support\Facades\Schema::hasTable('roles')
-            && \Illuminate\Support\Facades\Schema::hasTable('menus')
-            && \Illuminate\Support\Facades\Schema::hasTable('menu_role');
-
-        if (! $hasTable) {
-            return true;
-        }
-
-        // 用户无任何角色时，视为未初始化的系统，放行以兼容旧逻辑
-        if ($user->roles()->count() === 0) {
-            return true;
-        }
-
-        return $user->roles()
-            ->whereHas('menus', function ($query) use ($permissions) {
-                $query->whereIn('permission', $permissions);
-            })
-            ->exists();
+        return $this->permissionManager->hasAnyPermission($user, $permissions);
     }
 
     protected function hasPermission(User $user, string $permission): bool
     {
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
-
-        $hasTable = \Illuminate\Support\Facades\Schema::hasTable('roles')
-            && \Illuminate\Support\Facades\Schema::hasTable('menus')
-            && \Illuminate\Support\Facades\Schema::hasTable('menu_role');
-
-        if (! $hasTable) {
-            return true;
-        }
-
-        // 用户无任何角色时，视为未初始化的系统，放行以兼容旧逻辑
-        if ($user->roles()->count() === 0) {
-            return true;
-        }
-
-        return $user->roles()
-            ->whereHas('menus', function ($query) use ($permission) {
-                $query->where('permission', $permission)
-                    ->orWhere('permission', 'like', str_replace('.', '.%', $permission));
-            })
-            ->exists();
+        return $this->permissionManager->hasPermission($user, $permission);
     }
 }

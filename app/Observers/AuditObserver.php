@@ -116,13 +116,31 @@ class AuditObserver
 
     public function synced($model, string $relation, array $changes): void
     {
+        $attached = $changes['attached'] ?? [];
+        $detached = $changes['detached'] ?? [];
+        $updated = $changes['updated'] ?? [];
+
+        $oldIds = $this->getOldIds($model, $relation, $attached, $detached);
+        $newIds = $this->getNewIds($model, $relation);
+
+        $oldData = [
+            'ids' => $oldIds,
+            'attached' => $attached,
+            'detached' => $detached,
+            'updated' => $updated,
+        ];
+
+        $newData = [
+            'ids' => $newIds,
+        ];
+
         if ($model instanceof Role && $relation === 'menus') {
             Audit::log(
                 type: 'permission',
                 module: 'role',
                 action: '同步角色权限 #' . $model->getKey(),
-                oldData: $changes['old'] ?? [],
-                newData: $changes['new'] ?? [],
+                oldData: $oldData,
+                newData: $newData,
                 subject: $model,
             );
         }
@@ -132,10 +150,90 @@ class AuditObserver
                 type: 'permission',
                 module: 'menu',
                 action: '同步菜单角色 #' . $model->getKey(),
-                oldData: $changes['old'] ?? [],
-                newData: $changes['new'] ?? [],
+                oldData: $oldData,
+                newData: $newData,
                 subject: $model,
             );
         }
+
+        if ($model instanceof User && $relation === 'roles') {
+            Audit::log(
+                type: 'permission',
+                module: 'user',
+                action: '同步用户角色 #' . $model->getKey(),
+                oldData: $oldData,
+                newData: $newData,
+                subject: $model,
+            );
+        }
+    }
+
+    protected function getOldIds($model, string $relation, array $attached, array $detached): array
+    {
+        $currentIds = $this->getNewIds($model, $relation);
+
+        return array_values(array_unique(array_merge(
+            array_diff($currentIds, $attached),
+            $detached,
+        )));
+    }
+
+    protected function getNewIds($model, string $relation): array
+    {
+        $query = $model->$relation();
+
+        return $query->get()->pluck($query->getRelated()->getKeyName())->all();
+    }
+
+    public function attached($model, string $relation, array $pivotIds): void
+    {
+        $this->logPivotChange($model, $relation, $pivotIds, [], 'attach');
+    }
+
+    public function detached($model, string $relation, array $pivotIds): void
+    {
+        $this->logPivotChange($model, $relation, [], $pivotIds, 'detach');
+    }
+
+    protected function logPivotChange($model, string $relation, array $attached, array $detached, string $type): void
+    {
+        if (! $model instanceof Role && ! $model instanceof Menu && ! $model instanceof User) {
+            return;
+        }
+
+        if ($relation !== 'menus' && $relation !== 'roles') {
+            return;
+        }
+
+        $newIds = $this->getNewIds($model, $relation);
+        $oldIds = array_values(array_unique(array_merge(
+            array_diff($newIds, $attached),
+            $detached,
+        )));
+
+        $oldData = ['ids' => $oldIds];
+        $newData = ['ids' => $newIds];
+
+        $module = match (true) {
+            $model instanceof Role => 'role',
+            $model instanceof Menu => 'menu',
+            $model instanceof User => 'user',
+            default => 'system',
+        };
+
+        $action = match ($type) {
+            'attach' => '添加关联',
+            'detach' => '移除关联',
+            default => '同步关联',
+        };
+
+        Audit::log(
+            type: 'permission',
+            module: $module,
+            action: $action . ' #' . $model->getKey(),
+            oldData: $oldData,
+            newData: $newData,
+            subject: $model,
+        );
     }
 }

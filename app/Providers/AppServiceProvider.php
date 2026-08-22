@@ -7,6 +7,7 @@ use App\Models\Article;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Feedback;
+use App\Models\Notification;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Menu;
@@ -17,9 +18,11 @@ use App\Policies\CategoryPolicy;
 use App\Policies\FeedbackPolicy;
 use App\Policies\MenuPolicy;
 use App\Policies\MediaPolicy;
+use App\Policies\NotificationPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\UserPolicy;
 use App\Observers\AuditObserver;
+use App\Observers\PermissionCacheObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -47,6 +50,10 @@ class AppServiceProvider extends ServiceProvider
         Role::observe(AuditObserver::class);
         Menu::observe(AuditObserver::class);
 
+        Role::observe(PermissionCacheObserver::class);
+        Menu::observe(PermissionCacheObserver::class);
+        User::observe(PermissionCacheObserver::class);
+
         $this->registerPolicies();
     }
 
@@ -61,5 +68,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
         Gate::policy(Media::class, MediaPolicy::class);
+        Gate::policy(Notification::class, NotificationPolicy::class);
     }
 }

@@ -27,6 +27,12 @@ class MenuPermissionManager
             return ['*'];
         }
 
+        $roleCount = $user->roles()->count();
+
+        if ($roleCount === 0) {
+            return ['*'];
+        }
+
         return Cache::remember(
             $this->cachePrefix.$user->id,
             $this->cacheTtl,
@@ -88,6 +94,12 @@ class MenuPermissionManager
             && Schema::hasTable('menu_role');
 
         if (! $hasTable) {
+            return ['*'];
+        }
+
+        $roleCount = $user->roles()->count();
+
+        if ($roleCount === 0) {
             return ['*'];
         }
 
