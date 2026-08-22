@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ArticleResource\Pages;
 use App\Models\Article;
 use App\Models\Category;
+use App\Support\ManagesRichEditorAttachments;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -23,6 +24,8 @@ use Filament\Tables\Table;
 
 class ArticleResource extends Resource
 {
+    use ManagesRichEditorAttachments;
+
     protected static ?string $model = Article::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
@@ -95,9 +98,13 @@ class ArticleResource extends Resource
                         Forms\Components\RichEditor::make('content')
                             ->label('正文')
                             ->required()
+                            ->fileAttachmentsDisk('public')
+                            ->fileAttachmentsDirectory('rich-editor/'.now()->format('Ym'))
+                            ->saveUploadedFileAttachmentUsing(self::richEditorSaveAttachmentCallback('public'))
                             ->toolbarButtons([
                                 'bold', 'italic', 'bulletList', 'orderedList',
-                                'link', 'blockquote', 'undo', 'redo',
+                                'link', 'blockquote', 'attachFiles',
+                                'undo', 'redo',
                             ]),
                     ]),
             ]);

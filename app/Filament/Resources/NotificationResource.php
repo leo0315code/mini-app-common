@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\NotificationResource\Pages;
 use App\Models\Notification;
 use App\Models\User;
+use App\Support\ExportsCsv;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\BulkActionGroup;
@@ -23,6 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class NotificationResource extends Resource
 {
+    use ExportsCsv;
     protected static ?string $model = Notification::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-bell';
@@ -190,7 +192,84 @@ class NotificationResource extends Resource
                 DeleteAction::make(),
             ])
             ->toolbarActions([
+                self::buildExportAllHeaderAction(
+                    baseQuery: Notification::query()->with(['creator'])->withCount('recipients'),
+                    columnMap: [
+                        'id' => 'ID',
+                        'title' => '标题',
+                        'type_txt' => '类型',
+                        'scope_txt' => '接收范围',
+                        'body' => '正文',
+                        'published_txt' => '发布状态',
+                        'recipients_count' => '接收人数',
+                        'read_rate' => '已读率',
+                        'creator_name' => '发送人',
+                        'created_at_txt' => '创建时间',
+                        'published_at_txt' => '发布时间',
+                    ],
+                    label: '导出全部通知',
+                    fileNamePrefix: 'notifications',
+                    rowCallback: static fn (Notification $n): array => [
+                        $n->id,
+                        (string) $n->title,
+                        match ((string) $n->type) {
+                            'activity' => '活动',
+                            'version' => '版本更新',
+                            default => '系统通知',
+                        },
+                        match ((string) $n->scope) {
+                            'registered' => '已注册',
+                            'specified' => '指定用户',
+                            default => '全部',
+                        },
+                        (string) $n->body,
+                        $n->published ? '已发布' : '草稿',
+                        (int) ($n->recipients_count ?? $n->recipients()->count()),
+                        (function () use ($n): string {
+                            $total = (int) ($n->recipients_count ?? $n->recipients()->count());
+                            if ($total === 0) {
+                                return '0%';
+                            }
+                            $read = $n->recipients()->wherePivot('read', true)->count();
+
+                            return round($read / $total * 100) . '%';
+                        })(),
+                        $n->creator?->name ?? '—',
+                        $n->created_at?->format('Y-m-d H:i:s') ?? '',
+                        $n->published_at?->format('Y-m-d H:i:s') ?? '',
+                    ],
+                ),
                 BulkActionGroup::make([
+                    self::buildExportSelectedBulkAction(
+                        columnMap: [
+                            'id' => 'ID',
+                            'title' => '标题',
+                            'type_txt' => '类型',
+                            'scope_txt' => '接收范围',
+                            'published_txt' => '发布状态',
+                            'recipients_count' => '接收人数',
+                            'created_at_txt' => '创建时间',
+                        ],
+                        label: '导出所选 CSV',
+                        fileNamePrefix: 'notifications',
+                        rowCallback: static fn (Notification $n): array => [
+                            $n->id,
+                            (string) $n->title,
+                            match ((string) $n->type) {
+                                'activity' => '活动',
+                                'version' => '版本更新',
+                                default => '系统通知',
+                            },
+                            match ((string) $n->scope) {
+                                'registered' => '已注册',
+                                'specified' => '指定用户',
+                                default => '全部',
+                            },
+                            $n->published ? '已发布' : '草稿',
+                            $n->recipients()->count(),
+                            $n->created_at?->format('Y-m-d H:i:s') ?? '',
+                        ],
+                    ),
                     DeleteBulkAction::make(),
                 ]),
             ])

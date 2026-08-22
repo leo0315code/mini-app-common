@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
+use App\Support\ExportsCsv;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -27,6 +28,8 @@ use UnitEnum;
 
 class UserResource extends Resource
 {
+    use ExportsCsv;
+
     protected static ?string $model = User::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
@@ -210,6 +213,10 @@ class UserResource extends Resource
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('viewUser')
+                    ->label('详情')
+                    ->icon('heroicon-o-user')
+                    ->url(fn (User $record): string => static::getUrl('view', ['record' => $record])),
                 Action::make('ban')
                     ->label('封禁')
                     ->icon('heroicon-o-no-symbol')
@@ -244,7 +251,62 @@ class UserResource extends Resource
                 DeleteAction::make(),
             ])
             ->toolbarActions([
+                self::buildExportAllHeaderAction(
+                    baseQuery: User::query(),
+                    columnMap: [
+                        'id' => 'ID',
+                        'nickname' => '昵称',
+                        'phone' => '手机号',
+                        'gender_txt' => '性别',
+                        'status_txt' => '状态',
+                        'openid' => 'OpenID',
+                        'unionid' => 'UnionID',
+                        'created_at_txt' => '注册时间',
+                        'banned_at_txt' => '封禁时间',
+                        'ban_reason' => '封禁原因',
+                        'roles_txt' => '后台角色',
+                    ],
+                    label: '导出全部用户',
+                    fileNamePrefix: 'users',
+                    rowCallback: static fn (User $u): array => [
+                        $u->id,
+                        (string) $u->nickname,
+                        (string) $u->phone,
+                        match ((string) $u->gender) { '0' => '未知', '1' => '男', '2' => '女', default => $u->gender, },
+                        $u->status === User::STATUS_BANNED ? '已封禁' : '正常',
+                        (string) $u->openid,
+                        (string) $u->unionid,
+                        $u->created_at?->format('Y-m-d H:i:s') ?? '',
+                        $u->banned_at?->format('Y-m-d H:i:s') ?? '',
+                        (string) $u->ban_reason,
+                        $u->roles->pluck('name')->implode(' / '),
+                    ],
+                ),
                 BulkActionGroup::make([
+                    self::buildExportSelectedBulkAction(
+                        columnMap: [
+                            'id' => 'ID',
+                            'nickname' => '昵称',
+                            'phone' => '手机号',
+                            'gender_txt' => '性别',
+                            'status_txt' => '状态',
+                            'openid' => 'OpenID',
+                            'created_at_txt' => '注册时间',
+                            'roles_txt' => '角色',
+                        ],
+                        label: '导出所选 CSV',
+                        fileNamePrefix: 'users',
+                        rowCallback: static fn (User $u): array => [
+                            $u->id,
+                            (string) $u->nickname,
+                            (string) $u->phone,
+                            match ((string) $u->gender) { '0' => '未知', '1' => '男', '2' => '女', default => $u->gender, },
+                            $u->status === User::STATUS_BANNED ? '已封禁' : '正常',
+                            (string) $u->openid,
+                            $u->created_at?->format('Y-m-d H:i:s') ?? '',
+                            $u->roles->pluck('name')->implode(' / '),
+                        ],
+                    ),
                     DeleteBulkAction::make(),
                 ]),
             ])
@@ -261,6 +323,7 @@ class UserResource extends Resource
         return [
             'index' => Pages\ListUsers::route('/'),
             'create' => Pages\CreateUser::route('/create'),
+            'view' => Pages\ViewUser::route('/{record}'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
     }

@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\FeedbackResource\Pages;
 use App\Models\Feedback;
 use App\Models\User;
+use App\Support\ExportsCsv;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -23,6 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class FeedbackResource extends Resource
 {
+    use ExportsCsv;
     protected static ?string $model = Feedback::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chat-bubble-left-right';
@@ -208,6 +210,47 @@ class FeedbackResource extends Resource
                     }),
             ])
             ->toolbarActions([
+                self::buildExportAllHeaderAction(
+                    baseQuery: Feedback::query()->with(['user', 'handler']),
+                    columnMap: [
+                        'id' => 'ID',
+                        'type_txt' => '类型',
+                        'content' => '内容',
+                        'status_txt' => '状态',
+                        'user_name' => '用户昵称',
+                        'contact' => '联系方式',
+                        'handle_note' => '处理备注',
+                        'handler_name' => '处理人',
+                        'handled_at_txt' => '处理时间',
+                        'created_at_txt' => '提交时间',
+                    ],
+                    label: '导出全部反馈',
+                    fileNamePrefix: 'feedbacks',
+                    rowCallback: static fn (Feedback $f): array => [
+                        $f->id,
+                        match ((string) $f->type) {
+                            Feedback::TYPE_SUGGESTION => '建议',
+                            Feedback::TYPE_BUG => '缺陷',
+                            Feedback::TYPE_COMPLAINT => '投诉',
+                            Feedback::TYPE_OTHER => '其他',
+                            default => $f->type,
+                        },
+                        (string) $f->content,
+                        match ((string) $f->status) {
+                            Feedback::STATUS_PENDING => '待处理',
+                            Feedback::STATUS_PROCESSING => '处理中',
+                            Feedback::STATUS_RESOLVED => '已解决',
+                            Feedback::STATUS_REJECTED => '已驳回',
+                            default => $f->status,
+                        },
+                        $f->user?->nickname ?? '游客',
+                        (string) $f->contact,
+                        (string) $f->handle_note,
+                        $f->handler?->name ?? '—',
+                        $f->handled_at?->format('Y-m-d H:i:s') ?? '',
+                        $f->created_at?->format('Y-m-d H:i:s') ?? '',
+                    ],
+                ),
                 BulkActionGroup::make([
                     BulkAction::make('batchResolved')
                         ->label('批量已解决')
@@ -226,6 +269,40 @@ class FeedbackResource extends Resource
                                 ->title('已批量标记 '.count($records).' 条反馈为已解决')
                                 ->send();
                         }),
+                    self::buildExportSelectedBulkAction(
+                        columnMap: [
+                            'id' => 'ID',
+                            'type_txt' => '类型',
+                            'content' => '内容',
+                            'status_txt' => '状态',
+                            'user_name' => '用户昵称',
+                            'contact' => '联系方式',
+                            'created_at_txt' => '提交时间',
+                        ],
+                        label: '导出所选 CSV',
+                        fileNamePrefix: 'feedbacks',
+                        rowCallback: static fn (Feedback $f): array => [
+                            $f->id,
+                            match ((string) $f->type) {
+                                Feedback::TYPE_SUGGESTION => '建议',
+                                Feedback::TYPE_BUG => '缺陷',
+                                Feedback::TYPE_COMPLAINT => '投诉',
+                                Feedback::TYPE_OTHER => '其他',
+                                default => $f->type,
+                            },
+                            (string) $f->content,
+                            match ((string) $f->status) {
+                                Feedback::STATUS_PENDING => '待处理',
+                                Feedback::STATUS_PROCESSING => '处理中',
+                                Feedback::STATUS_RESOLVED => '已解决',
+                                Feedback::STATUS_REJECTED => '已驳回',
+                                default => $f->status,
+                            },
+                            $f->user?->nickname ?? '游客',
+                            (string) $f->contact,
+                            $f->created_at?->format('Y-m-d H:i:s') ?? '',
+                        ],
+                    ),
                     DeleteBulkAction::make(),
                 ]),
             ])

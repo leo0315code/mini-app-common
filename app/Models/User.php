@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Notifications\Notifiable;
@@ -135,6 +136,57 @@ class User extends Authenticatable implements FilamentUser
     public function tokens()
     {
         return $this->morphMany(PersonalAccessToken::class, 'tokenable');
+    }
+
+    /**
+     * 用户提交的反馈
+     */
+    public function feedbacks(): HasMany
+    {
+        return $this->hasMany(Feedback::class, 'user_id');
+    }
+
+    /**
+     * 用户作为处理人处理过的反馈
+     */
+    public function handledFeedbacks(): HasMany
+    {
+        return $this->hasMany(Feedback::class, 'handled_by');
+    }
+
+    /**
+     * 用户接收到的站内通知（含已读状态 pivot）
+     */
+    public function notifications(): BelongsToMany
+    {
+        return $this->belongsToMany(Notification::class, 'notification_user')
+            ->withPivot('read', 'read_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * 用户创建的站内通知
+     */
+    public function createdNotifications(): HasMany
+    {
+        return $this->hasMany(Notification::class, 'creator_id');
+    }
+
+    /**
+     * 用户上传的媒体文件
+     */
+    public function media(): HasMany
+    {
+        return $this->hasMany(Media::class, 'user_id');
+    }
+
+    /**
+     * 用户的审计日志
+     */
+    public function audits(): HasMany
+    {
+        return $this->hasMany(AuditLog::class, 'actor_id')
+            ->orderBy('created_at', 'desc');
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\AnnouncementResource\Pages;
 use App\Models\Announcement;
 use App\Models\User;
+use App\Support\ManagesRichEditorAttachments;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\BulkActionGroup;
@@ -23,6 +24,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AnnouncementResource extends Resource
 {
+    use ManagesRichEditorAttachments;
+
     protected static ?string $model = Announcement::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-megaphone';
@@ -74,9 +77,13 @@ class AnnouncementResource extends Resource
                         Forms\Components\RichEditor::make('content')
                             ->label('正文')
                             ->required()
+                            ->fileAttachmentsDisk('public')
+                            ->fileAttachmentsDirectory('rich-editor/'.now()->format('Ym'))
+                            ->saveUploadedFileAttachmentUsing(self::richEditorSaveAttachmentCallback('public'))
                             ->toolbarButtons([
                                 'bold', 'italic', 'bulletList', 'orderedList',
-                                'link', 'blockquote', 'undo', 'redo',
+                                'link', 'blockquote', 'attachFiles',
+                                'undo', 'redo',
                             ]),
                     ]),
             ]);
