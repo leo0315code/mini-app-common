@@ -19,8 +19,9 @@
 | --- | --- |
 | [docs/README.md](./docs/README.md) | 项目总览、快速开始、技术栈 |
 | [docs/install.md](./docs/install.md) | 环境要求、安装、部署、Git / 版本规范 |
-| [docs/config.md](./docs/config.md) | 微信小程序、数据库、鉴权、CORS 配置 |
+| [docs/config.md](./docs/config.md) | 微信小程序、数据库、Redis、鉴权、CORS 配置 |
 | [docs/auth.md](./docs/auth.md) | 微信登录流程图 + 完整 API 接口文档 |
+| [docs/rbac.md](./docs/rbac.md) | RBAC 权限系统（角色管理、菜单权限、级联选择、策略守卫、缓存） |
 | [docs/database.md](./docs/database.md) | 数据表结构设计 |
 | [docs/structure.md](./docs/structure.md) | 目录结构与核心文件职责 |
 | [docs/testing.md](./docs/testing.md) | 测试指南 |
@@ -51,7 +52,7 @@ docker compose up -d --build
 运行测试：
 
 ```bash
-php artisan test          # 26 个用例，覆盖登录 / 用户 / 手机号 / 系统配置
+php artisan test          # 73 个用例，覆盖登录 / 用户 / 手机号 / RBAC / 中间件
 ```
 
 ## 技术栈

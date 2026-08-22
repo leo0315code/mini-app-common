@@ -17,8 +17,9 @@
 | 文档 | 内容 |
 | --- | --- |
 | [install.md](./install.md) | 环境要求、安装、部署、Git / 版本号规范 |
-| [config.md](./config.md) | `.env` 配置项说明（微信小程序、数据库、鉴权） |
+| [config.md](./config.md) | `.env` 配置项说明（微信小程序、数据库、Redis、鉴权、CORS） |
 | [auth.md](./auth.md) | 微信登录流程图 + 完整 API 接口文档 |
+| [rbac.md](./rbac.md) | RBAC 权限系统（角色管理、菜单权限、级联选择、策略守卫、缓存） |
 | [database.md](./database.md) | 数据表结构设计 |
 | [structure.md](./structure.md) | 目录结构与核心文件职责 |
 | [testing.md](./testing.md) | 测试指南（单元测试 / 功能测试 / CI） |

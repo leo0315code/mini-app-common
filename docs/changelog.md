@@ -4,18 +4,51 @@
 
 ---
 
-## [v1.9.0] - 2026-08-22
+## [v1.12.0] - 2026-08-22
 
-用户封禁（`roadmap` P1 第 2 项，改动涉及表结构）：
+RBAC 权限系统完善 + 技术债清理：
 
-- **数据表**：`users` 新增 `status`（normal/banned）、`banned_at`、`ban_reason` 字段及 `status` 索引。
-- **模型**：`User` 增加 `isBanned()` / `ban($reason)` / `unban()` / `scopeActive()`；`ban()` 同时撤销该用户全部 API Token（立即踢下线）。
-- **接口拦截**：
-  - 新增中间件 `EnsureUserNotBanned`，挂在 `api` 路由组的 `auth:sanctum` 之后，封禁用户即使持旧 Token 访问受保护接口也返回 `40301 账号已被封禁`。
-  - 登录（`POST /api/auth/login`）校验封禁状态，封禁用户拒绝登录并吊销已有登录态（返回 `40301`）。
-- **后台用户管理**：列表新增「状态」徽标列（正常/已封禁）、按状态筛选；行内新增「封禁 / 解封」动作（带确认，解封仅对封禁用户显示）。
-- **测试**：新增 `tests/Feature/UserBanTest.php`（登录拦截、接口中间件拦截、解封恢复、后台 ban/unban 底层逻辑、列表页动作渲染），全量 **68 passed (181 assertions)**。
-- **注意**：部署需执行 `php artisan migrate`；本地主库（laravel-mini）当前离线，上线时务必先起 MySQL 再迁移。
+- **完整 RBAC 权限系统**：
+  - `MenuPermissionManager`：统一权限查询入口 + 缓存（TTL 3600s）
+  - `BasePolicy` 抽象基类 + 全部资源策略（Article/Category/User/Role/Menu/Feedback/Announcement/Notification/Media/Setting/AuditLog）
+  - `MenuCascadeService`：菜单级联选择逻辑独立化
+  - `RolePresetTemplates`：4 种预设模板（内容编辑/运营/审核员/系统管理员）
+  - `CheckMenuPermission` 中间件：管理员 API 权限保护
+  - 侧边栏权限过滤：基于 Filament Policy 自动隐藏无权访问的资源
+- **审计日志增强**：
+  - `AuditObserver` 支持 `attached/detached/synced` pivot 事件，完整记录角色-菜单-用户关联变更
+  - 消除 N+1 查询，提取公共方法
+- **权限缓存失效三重保障**：
+  - `PermissionCacheObserver`：监听 Role/Menu/User 模型事件自动清缓存
+  - `User::assignRole()` 显式清缓存
+  - `Menu::created/deleting` 事件显式清缓存
+- **模型风格统一**：全部 11 个模型改用 PHP 8.3 `#[Fillable]` 属性 + `casts()` 方法
+- **菜单管理**：新增 `MenuResource` 后台菜单 CRUD，支持树形结构，删除时级联清理
+- **角色克隆**：`RoleResource` 支持单个/批量克隆角色及其权限
+- **Seeder 安全**：`MenusTableSeeder` 生产环境自动跳过 truncate
+- **Redis 配置修复**：`config/database.php` cluster 默认设为 `false`，`.env` 使用 `REDIS_HOST=127.0.0.1` 本地直连
+- **文档**：新增 `docs/rbac.md` 完整权限系统文档，更新 `docs/admin.md`/`docs/config.md`/`docs/structure.md`
+- **测试**：全量 **73 passed (204 assertions)**，新增 UserBanTest 中间件测试
+
+---
+
+## [v1.11.0] - 2026-08-22
+
+角色管理菜单权限分配（级联选择 + 自定义 UI）：
+
+- **角色管理增强**：
+  - `RoleResource` 新增菜单权限分配 Tab，树形结构展示所有菜单
+  - 级联选择：勾选父菜单自动选中子菜单，部分选中显示 indeterminate 状态
+  - 统计卡片 + 工具栏（全选/清空/展开/折叠）+ 选中徽章
+  - 自定义 `MenuCheckboxList` 组件 + Alpine.js 交互逻辑
+- **Menu 模型**：新增 `parent_id` 树形结构、`sort_order` 排序、`permission` 权限键
+- **菜单种子数据**：`MenusTableSeeder` 初始化完整菜单树 + super-admin 自动分配
+- **菜单自动分配**：`Menu::created` 事件自动将新菜单分配给 super-admin 角色
+- **Filament v5 兼容修复**：
+  - `Tabs` 命名空间改为 `Filament\Schemas\Components`
+  - `Section` 命名空间改为 `Filament\Schemas\Components`
+  - `bulkToggleable()` 替代已移除的 `bulkable()`
+  - `Forms\Components\Action` → `Filament\Actions\Action`
 
 ---
 
@@ -27,8 +60,20 @@
 - **待处理反馈表** `app/Filament/Widgets/PendingFeedbackTable.php`：工作台新增表格 widget，展示最新 10 条 pending 反馈（类型徽标 / 内容 / 联系方式 / 提交时间），提供「去处理」动作直达反馈编辑页。
 - **接入 Dashboard** `app/Filament/Pages/Dashboard.php`：两个新 widget 已注册到工作台布局（运营指标卡接在用户统计卡之后、待处理反馈表接在最近注册用户之后），欢迎区说明同步更新。
 - **测试** `tests/Feature/AdminDashboardTest.php`：工作台可访问性（admin OK / 成员 Forbidden）+ `OpexStatsWidget::getStats()` 单元级断言（6 卡结构、关键口径、pending 计数）。
-- **说明**：StatsOverviewWidget 为 Livewire 异步组件，初始 HTML 不含卡片文本，故测试对 `getStats()` 直接断言而非页面文本。
-- 部署无需迁移；Docker 环境下已通过真实 MySQL 校验统计口径准确。
+
+---
+
+## [v1.9.0] - 2026-08-22
+
+用户封禁（`roadmap` P1 第 2 项，改动涉及表结构）：
+
+- **数据表**：`users` 新增 `status`（normal/banned）、`banned_at`、`ban_reason` 字段及 `status` 索引。
+- **模型**：`User` 增加 `isBanned()` / `ban($reason)` / `unban()` / `scopeActive()`；`ban()` 同时撤销该用户全部 API Token（立即踢下线）。
+- **接口拦截**：
+  - 新增中间件 `EnsureUserNotBanned`，挂在 `api` 路由组的 `auth:sanctum` 之后，封禁用户即使持旧 Token 访问受保护接口也返回 `40301 账号已被封禁`。
+  - 登录（`POST /api/auth/login`）校验封禁状态，封禁用户拒绝登录并吊销已有登录态（返回 `40301`）。
+- **后台用户管理**：列表新增「状态」徽标列（正常/已封禁）、按状态筛选；行内新增「封禁 / 解封」动作（带确认，解封仅对封禁用户显示）。
+- **测试**：新增 `tests/Feature/UserBanTest.php`（登录拦截、接口中间件拦截、解封恢复、后台 ban/unban 底层逻辑、列表页动作渲染），全量 **68 passed (181 assertions)**。
 
 ---
 

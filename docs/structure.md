@@ -20,18 +20,43 @@ mini-app-common/
 │   │   └── Resources/
 │   │       └── UserResource.php          # 用户 JSON 响应格式
 │   ├── Models/
-│   │   ├── User.php                      # 用户模型（含 openid/phone/meta + tokens 关联）
+│   │   ├── User.php                      # 用户模型（含 openid/phone/meta + tokens + roles 关联）
+│   │   ├── Role.php                      # 角色模型（RBAC，#[Fillable] 属性）
+│   │   ├── Menu.php                      # 菜单模型（树形结构 + 权限键 + created/deleting 事件）
 │   │   ├── Announcement.php              # 公告（小程序端拉取已发布内容）
 │   │   ├── Feedback.php                  # 用户反馈（小程序端提交，后台处理）
-│   │   ├── AuditLog.php                  # 操作审计日志
-│   │   ├── Category.php                  # 内容分类（CMS）
-│   │   └── Article.php                   # 文章/内容（CMS，小程序端按频道拉取）
+│   │   ├── AuditLog.php                  # 操作审计日志（#[Fillable] 属性）
+│   │   ├── Category.php                  # 内容分类（CMS，#[Fillable] 属性）
+│   │   ├── Article.php                   # 文章/内容（CMS，#[Fillable] 属性）
+│   │   ├── Notification.php              # 站内通知（#[Fillable] 属性）
+│   │   └── Media.php                     # 媒体文件（#[Fillable] 属性）
 │   ├── Services/
 │   │   └── WechatService.php             # 微信 code2session + 手机号解密
 │   │   └── Audit.php                     # 审计日志便捷写入服务
+│   ├── Support/
+│   │   ├── MenuPermissionManager.php     # 权限查询统一入口 + 缓存
+│   │   ├── MenuCascadeService.php        # 菜单级联选择逻辑
+│   │   └── RolePresetTemplates.php       # 角色预设模板
+│   ├── Policies/
+│   │   ├── BasePolicy.php                # 策略抽象基类（权限守卫）
+│   │   ├── ArticlePolicy.php             # 文章策略
+│   │   ├── CategoryPolicy.php            # 分类策略
+│   │   ├── UserPolicy.php                # 用户策略
+│   │   ├── RolePolicy.php                # 角色策略
+│   │   ├── MenuPolicy.php                # 菜单策略
+│   │   ├── FeedbackPolicy.php            # 反馈策略
+│   │   ├── AnnouncementPolicy.php        # 公告策略
+│   │   ├── NotificationPolicy.php        # 通知策略
+│   │   ├── MediaPolicy.php               # 媒体策略
+│   │   ├── SettingPolicy.php             # 系统设置策略
+│   │   └── AuditLogPolicy.php            # 审计日志策略
 │   ├── Observers/
-│   │   └── AuditObserver.php             # 监听 User/Announcement/Feedback 写库自动记审计
+│   │   ├── AuditObserver.php             # 监听 User/Role/Menu/Announcement/Feedback 写库自动记审计
+│   │   └── PermissionCacheObserver.php   # 监听模型事件自动清权限缓存
 │   ├── Http/
+│   │   ├── Middleware/
+│   │   │   ├── CheckMenuPermission.php   # 菜单权限中间件
+│   │   │   └── EnsureUserNotBanned.php   # 封禁用户拦截
 │   │   └── Controllers/
 │   │       ├── AuthController.php        # 微信登录 / 退出
 │   │       ├── UserController.php        # 当前用户 / 更新资料
@@ -42,7 +67,8 @@ mini-app-common/
 │   │   ├── Resources/
 │   │   │   ├── UserResource.php          # 用户管理（列表/创建/编辑 + 角色指派）
 │   │   │   ├── TokenResource.php         # API Token 管理（撤销）
-│   │   │   ├── RoleResource.php          # 角色管理（RBAC）
+│   │   │   ├── RoleResource.php          # 角色管理（RBAC + 菜单权限分配 + 预设模板 + 克隆）
+│   │   │   ├── MenuResource.php         # 菜单管理（树形结构 + 权限键）
 │   │   │   ├── AnnouncementResource.php  # 公告管理（增删改查 + 发布状态）
 │   │   │   ├── FeedbackResource.php      # 用户反馈（查看 + 处理动作）
 │   │   │   ├── NotificationResource.php  # 站内通知（群发/定向/已读回执）

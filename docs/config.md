@@ -146,7 +146,55 @@ GET https://api.weixin.qq.com/sns/jscode2session
 
 ---
 
-## 5. 中间件配置
+## 5. Redis 配置
+
+本项目使用 Redis 作为缓存、会话和队列驱动。
+
+### 5.1 环境变量
+
+```env
+REDIS_CLIENT=phpredis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+```
+
+### 5.2 配置说明
+
+| 变量 | 说明 | 本地开发 | Docker |
+|------|------|----------|--------|
+| `REDIS_HOST` | Redis 主机地址 | `127.0.0.1` | `redis`（Docker Compose 服务名） |
+| `REDIS_PORT` | Redis 端口 | `6379` | `6379` |
+| `REDIS_PASSWORD` | Redis 密码 | 留空（本地无密码） | 如设了密码需填写 |
+| `CACHE_STORE` | 缓存驱动 | `redis` | `redis` |
+| `SESSION_DRIVER` | 会话驱动 | `redis` | `redis` |
+| `QUEUE_CONNECTION` | 队列驱动 | `redis` | `redis` |
+
+### 5.3 本地开发 vs Docker
+
+- **本地开发**：使用 `127.0.0.1` + 本地 Redis 服务，可通过 ServBay 或 `brew install redis` 启动
+- **Docker**：使用 Docker Compose 的 `redis` 服务名，容器内自动解析
+- **切换说明**：`.env` 中的 `REDIS_HOST` 需根据运行环境调整；`config/database.php` 中 `cluster` 默认设为 `false`（关闭集群模式）
+
+### 5.4 常见问题
+
+**Q: 本地 `php artisan` 报 `getaddrinfo for redis failed`？**
+
+A: 本地没有 Redis 服务或 `REDIS_HOST` 配置为 `redis`（Docker 内部名）。解决方案：
+1. 确保本地 Redis 已启动（`redis-server` 或 ServBay）
+2. `.env` 中设置 `REDIS_HOST=127.0.0.1`
+
+**Q: 如何临时切换到 file 驱动调试？**
+
+```env
+CACHE_STORE=file
+SESSION_DRIVER=file
+```
+
+---
+
+## 6. 中间件配置
 
 `bootstrap/app.php` 已注册以下关键中间件（Laravel 13 默认包含）：
 
@@ -154,6 +202,8 @@ GET https://api.weixin.qq.com/sns/jscode2session
 | --- | --- |
 | `auth:sanctum` | 校验 Bearer Token，注入 `$request->user()` |
 | `api` (`throttle:api`) | API 限流，防止刷接口 |
+| `menu.permission` | 菜单权限检查，基于角色-菜单关联判断访问权限 |
 | `EnsureFrontendRequestsAreStateful` | Sanctum SPA 状态保持（可选） |
+| `EnsureUserNotBanned` | 封禁用户拦截 |
 
-> 所有小程序接口统一加 `api` 前缀与 `throttle:api` 限流保护。
+> 所有小程序接口统一加 `api` 前缀与 `throttle:api` 限流保护。管理员 API 额外加 `menu.permission` 中间件。
