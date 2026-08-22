@@ -117,10 +117,11 @@ class CmsTest extends TestCase
     public function test_admin_can_edit_article(): void
     {
         $admin = $this->admin();
-        Article::factory()->count(3)->create();
+        $articles = Article::factory()->count(3)->create();
+        $target = $articles->last();
 
         $this->actingAs($admin)
-            ->get('/admin/articles/3/edit')
+            ->get('/admin/articles/' . $target->id . '/edit')
             ->assertOk();
     }
 
@@ -130,10 +131,11 @@ class CmsTest extends TestCase
     public function test_admin_can_edit_category(): void
     {
         $admin = $this->admin();
-        Category::factory()->count(2)->create();
+        $categories = Category::factory()->count(2)->create();
+        $target = $categories->last();
 
         $this->actingAs($admin)
-            ->get('/admin/categories/1/edit')
+            ->get('/admin/categories/' . $target->id . '/edit')
             ->assertOk();
     }
 

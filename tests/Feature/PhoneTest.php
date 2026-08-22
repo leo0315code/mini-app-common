@@ -41,19 +41,21 @@ class PhoneTest extends TestCase
 
         $user = User::factory()->create(['openid' => 'oTEST_OPENID']);
 
-        // 模拟 access_token 接口
+        // 按接口 URL 分别 mock，避免依赖 access_token 缓存与 sequence 顺序
         Http::fake([
-            '*' => Http::sequence()
-                ->push(['access_token' => 'test_access_token', 'expires_in' => 7200])
-                ->push([
-                    'errcode' => 0,
-                    'errmsg' => 'ok',
-                    'phone_info' => [
-                        'phoneNumber' => '13800138000',
-                        'purePhoneNumber' => '13800138000',
-                        'countryCode' => '86',
-                    ],
-                ]),
+            'https://api.weixin.qq.com/cgi-bin/token*' => Http::response([
+                'access_token' => 'test_access_token',
+                'expires_in' => 7200,
+            ]),
+            'https://api.weixin.qq.com/wxa/business/getuserphonenumber*' => Http::response([
+                'errcode' => 0,
+                'errmsg' => 'ok',
+                'phone_info' => [
+                    'phoneNumber' => '13800138000',
+                    'purePhoneNumber' => '13800138000',
+                    'countryCode' => '86',
+                ],
+            ]),
         ]);
 
         $this->actingAs($user)
@@ -79,12 +81,14 @@ class PhoneTest extends TestCase
         $user = User::factory()->create(['openid' => 'oTEST_OPENID']);
 
         Http::fake([
-            '*' => Http::sequence()
-                ->push(['access_token' => 'test_access_token', 'expires_in' => 7200])
-                ->push([
-                    'errcode' => 40029,
-                    'errmsg' => 'invalid code',
-                ]),
+            'https://api.weixin.qq.com/cgi-bin/token*' => Http::response([
+                'access_token' => 'test_access_token',
+                'expires_in' => 7200,
+            ]),
+            'https://api.weixin.qq.com/wxa/business/getuserphonenumber*' => Http::response([
+                'errcode' => 40029,
+                'errmsg' => 'invalid code',
+            ]),
         ]);
 
         $this->actingAs($user)
