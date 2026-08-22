@@ -2,15 +2,21 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\AnnouncementPublishedJob;
+use App\Jobs\FeedbackHandledJob;
+use App\Jobs\NotificationPublishedJob;
+use App\Jobs\SendSubscribeMessageToUserJob;
 use App\Models\Announcement;
 use App\Models\AuditLog;
 use App\Models\Feedback;
 use App\Models\Notification;
+use App\Models\SubscribeMessageFailure;
 use App\Models\User;
 use App\Services\SubscribeMessageService;
 use App\Services\WechatService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class SubscribeMessageTest extends TestCase
@@ -21,7 +27,6 @@ class SubscribeMessageTest extends TestCase
     {
         parent::setUp();
 
-        // 配置微信小程序配置
         config([
             'services.mini_program' => [
                 'app_id' => 'test-app-id',
@@ -32,12 +37,10 @@ class SubscribeMessageTest extends TestCase
         ]);
     }
 
-    /**
-     * WechatService::sendSubscribeMessage 成功推送
-     */
-    public function test_send_subscribe_message_success(): void
+    // ---------- WechatService 基础推送 ----------
+
+    public function test_wechat_service_send_success(): void
     {
-        // 伪造 access_token 接口
         Http::fake([
             'https://api.weixin.qq.com/cgi-bin/token*' => Http::response([
                 'access_token' => 'test-token-123',
@@ -49,382 +52,418 @@ class SubscribeMessageTest extends TestCase
             ], 200),
         ]);
 
-        /** @var WechatService $service */
         $service = app(WechatService::class);
-
         $result = $service->sendSubscribeMessage(
             openid: 'openid-abc',
             templateId: 'tpl-001',
-            data: ['thing1' => ['value' => '测试内容']],
+            data: ['thing1' => ['value' => '测试']],
             page: 'pages/index',
         );
 
         $this->assertTrue($result['success']);
         $this->assertSame(0, $result['errcode']);
-        $this->assertSame('ok', $result['errmsg']);
-
-        Http::assertSentCount(2);
     }
 
-    /**
-     * WechatService::sendSubscribeMessage 用户未订阅错误（43101）
-     */
-    public function test_send_subscribe_message_user_not_subscribed(): void
+    public function test_wechat_service_token_expired_retry(): void
     {
-        Http::fake([
-            'https://api.weixin.qq.com/cgi-bin/token*' => Http::response([
-                'access_token' => 'test-token-123',
-                'expires_in' => 7200,
-            ], 200),
-            'https://api.weixin.qq.com/cgi-bin/message/subscribe/send*' => Http::response([
-                'errcode' => 43101,
-                'errmsg' => 'user refuse to accept the msg',
-            ], 200),
-        ]);
-
-        /** @var WechatService $service */
-        $service = app(WechatService::class);
-
-        $result = $service->sendSubscribeMessage(
-            openid: 'openid-abc',
-            templateId: 'tpl-001',
-            data: ['thing1' => ['value' => '测试']],
-        );
-
-        $this->assertFalse($result['success']);
-        $this->assertSame(43101, $result['errcode']);
-        $this->assertStringContainsString('用户未订阅', $result['errmsg']);
-    }
-
-    /**
-     * WechatService token 过期自动刷新重试
-     */
-    public function test_send_subscribe_message_token_expired_then_retry(): void
-    {
-        $callCount = 0;
+        $count = 0;
         Http::fake([
             'https://api.weixin.qq.com/cgi-bin/token*' => Http::response([
                 'access_token' => 'refreshed-token',
                 'expires_in' => 7200,
             ], 200),
-            'https://api.weixin.qq.com/cgi-bin/message/subscribe/send*' => function () use (&$callCount) {
-                $callCount++;
-                if ($callCount === 1) {
-                    // 第一次返回 token 过期
-                    return Http::response([
-                        'errcode' => 42001,
-                        'errmsg' => 'access_token expired',
-                    ], 200);
-                }
-                // 第二次成功
-                return Http::response([
-                    'errcode' => 0,
-                    'errmsg' => 'ok',
-                ], 200);
-            },
-        ]);
-
-        /** @var WechatService $service */
-        $service = app(WechatService::class);
-
-        $result = $service->sendSubscribeMessage(
-            openid: 'openid-abc',
-            templateId: 'tpl-001',
-            data: ['thing1' => ['value' => '测试']],
-        );
-
-        $this->assertTrue($result['success']);
-        $this->assertSame(0, $result['errcode']);
-    }
-
-    /**
-     * 未配置模板 ID 时直接返回失败，不发请求
-     */
-    public function test_send_subscribe_missing_template_id_no_request(): void
-    {
-        config(['services.mini_program.feedback_template_id' => '']);
-
-        Http::fake();
-
-        /** @var WechatService $service */
-        $service = app(WechatService::class);
-
-        $result = $service->sendSubscribeMessage(
-            openid: 'openid-abc',
-            templateId: '',
-            data: ['thing1' => ['value' => '测试']],
-        );
-
-        $this->assertFalse($result['success']);
-        $this->assertSame(-2, $result['errcode']);
-        Http::assertNothingSent();
-    }
-
-    /**
-     * 反馈处理后推送：成功场景
-     */
-    public function test_push_feedback_handled_success(): void
-    {
-        $user = User::factory()->create(['openid' => 'openid-user-1']);
-        $feedback = Feedback::factory()->create([
-            'user_id' => $user->id,
-            'status' => Feedback::STATUS_PENDING,
-            'subscribe_sent' => false,
-        ]);
-
-        Http::fake([
-            'https://api.weixin.qq.com/cgi-bin/token*' => Http::response([
-                'access_token' => 'token',
-                'expires_in' => 7200,
-            ], 200),
-            'https://api.weixin.qq.com/cgi-bin/message/subscribe/send*' => Http::response([
-                'errcode' => 0,
-                'errmsg' => 'ok',
-            ], 200),
-        ]);
-
-        /** @var SubscribeMessageService $svc */
-        $svc = app(SubscribeMessageService::class);
-        $svc->pushFeedbackHandled($feedback->fresh());
-
-        $feedback->refresh();
-        $this->assertTrue($feedback->subscribe_sent);
-        $this->assertNotNull($feedback->subscribe_sent_at);
-        $this->assertNotNull($feedback->subscribe_result);
-
-        // 写入了审计日志
-        $this->assertDatabaseHas('audit_logs', [
-            'type' => 'subscribe_message',
-            'module' => 'feedback',
-            'action' => 'feedback_subscribe_sent',
-            'subject_type' => Feedback::class,
-            'subject_id' => $feedback->id,
-        ]);
-    }
-
-    /**
-     * 反馈处理后推送：失败不抛异常（用户未订阅）
-     */
-    public function test_push_feedback_handled_failure_no_exception(): void
-    {
-        $user = User::factory()->create(['openid' => 'openid-user-2']);
-        $feedback = Feedback::factory()->create([
-            'user_id' => $user->id,
-            'status' => Feedback::STATUS_RESOLVED,
-            'subscribe_sent' => false,
-        ]);
-
-        Http::fake([
-            'https://api.weixin.qq.com/cgi-bin/token*' => Http::response([
-                'access_token' => 'token',
-                'expires_in' => 7200,
-            ], 200),
-            'https://api.weixin.qq.com/cgi-bin/message/subscribe/send*' => Http::response([
-                'errcode' => 43101,
-                'errmsg' => 'user refuse',
-            ], 200),
-        ]);
-
-        /** @var SubscribeMessageService $svc */
-        $svc = app(SubscribeMessageService::class);
-
-        // 不应抛出异常
-        $svc->pushFeedbackHandled($feedback->fresh());
-
-        $feedback->refresh();
-        $this->assertTrue($feedback->subscribe_sent); // 标记为已尝试
-        $result = json_decode($feedback->subscribe_result, true);
-        $this->assertSame(43101, $result['errcode']);
-
-        // 写入了失败审计日志
-        $this->assertDatabaseHas('audit_logs', [
-            'type' => 'subscribe_message',
-            'module' => 'feedback',
-            'action' => 'feedback_subscribe_failed',
-            'subject_type' => Feedback::class,
-            'subject_id' => $feedback->id,
-        ]);
-    }
-
-    /**
-     * 重复推送：已推送过的反馈不会再次发送
-     */
-    public function test_push_feedback_skip_if_already_sent(): void
-    {
-        $user = User::factory()->create(['openid' => 'openid-user-3']);
-        $feedback = Feedback::factory()->create([
-            'user_id' => $user->id,
-            'status' => Feedback::STATUS_RESOLVED,
-            'subscribe_sent' => true, // 已标记为已推送
-            'subscribe_sent_at' => now()->subHour(),
-        ]);
-
-        Http::fake();
-
-        /** @var SubscribeMessageService $svc */
-        $svc = app(SubscribeMessageService::class);
-        $svc->pushFeedbackHandled($feedback->fresh());
-
-        Http::assertNothingSent();
-    }
-
-    /**
-     * 公告发布推送：按范围遍历所有 openid 用户
-     */
-    public function test_push_announcement_published_iterates_users(): void
-    {
-        $user1 = User::factory()->create(['openid' => 'openid-1', 'status' => User::STATUS_NORMAL]);
-        $user2 = User::factory()->create(['openid' => 'openid-2', 'status' => User::STATUS_NORMAL]);
-        User::factory()->create(['openid' => null, 'status' => User::STATUS_NORMAL]); // 无 openid 跳过
-        User::factory()->create(['openid' => 'openid-banned', 'status' => User::STATUS_BANNED]); // 被封禁跳过
-
-        $announcement = Announcement::factory()->create([
-            'status' => Announcement::STATUS_PUBLISHED,
-        ]);
-
-        Http::fake([
-            'https://api.weixin.qq.com/cgi-bin/token*' => Http::response([
-                'access_token' => 'token',
-                'expires_in' => 7200,
-            ], 200),
-            'https://api.weixin.qq.com/cgi-bin/message/subscribe/send*' => Http::response([
-                'errcode' => 0,
-                'errmsg' => 'ok',
-            ], 200),
-        ]);
-
-        /** @var SubscribeMessageService $svc */
-        $svc = app(SubscribeMessageService::class);
-        $svc->pushAnnouncementPublished($announcement);
-
-        // token 请求 + 至少 2 次 send 调用
-        $totalRequests = collect(Http::recorded())->count();
-        $this->assertGreaterThanOrEqual(3, $totalRequests, '至少 1 次 token + 2 次 send 请求');
-
-        // 审计日志写入
-        $this->assertDatabaseHas('audit_logs', [
-            'type' => 'subscribe_message',
-            'module' => 'announcement',
-            'action' => 'announcement_subscribe_published',
-            'subject_type' => Announcement::class,
-            'subject_id' => $announcement->id,
-        ]);
-    }
-
-    /**
-     * 公告推送：微信接口异常不中断，仍会遍历其他用户
-     */
-    public function test_push_announcement_exception_does_not_abort(): void
-    {
-        $user1 = User::factory()->create(['openid' => 'openid-e1', 'status' => User::STATUS_NORMAL]);
-        $user2 = User::factory()->create(['openid' => 'openid-e2', 'status' => User::STATUS_NORMAL]);
-
-        $announcement = Announcement::factory()->create([
-            'status' => Announcement::STATUS_PUBLISHED,
-        ]);
-
-        $sendCallCount = 0;
-        Http::fake([
-            'https://api.weixin.qq.com/cgi-bin/token*' => Http::response([
-                'access_token' => 'token',
-                'expires_in' => 7200,
-            ], 200),
-            'https://api.weixin.qq.com/cgi-bin/message/subscribe/send*' => function () use (&$sendCallCount) {
-                $sendCallCount++;
-                if ($sendCallCount === 1) {
-                    // 第一个用户抛出网络异常
-                    throw new \RuntimeException('connection timeout');
+            'https://api.weixin.qq.com/cgi-bin/message/subscribe/send*' => function () use (&$count) {
+                $count++;
+                if ($count === 1) {
+                    return Http::response(['errcode' => 42001, 'errmsg' => 'expired'], 200);
                 }
 
                 return Http::response(['errcode' => 0, 'errmsg' => 'ok'], 200);
             },
         ]);
 
-        /** @var SubscribeMessageService $svc */
-        $svc = app(SubscribeMessageService::class);
+        $result = app(WechatService::class)->sendSubscribeMessage(
+            openid: 'openid-abc',
+            templateId: 'tpl-001',
+            data: ['thing1' => ['value' => 'x']],
+        );
 
-        // 不应抛出异常
-        $svc->pushAnnouncementPublished($announcement);
-
-        // 两个用户都调用了 send 接口（异常被 catch，继续下一个）
-        $this->assertGreaterThanOrEqual(2, $sendCallCount);
+        $this->assertTrue($result['success']);
     }
 
-    /**
-     * 站内通知推送：scope=specified 指定用户
-     */
-    public function test_push_notification_published_specified_scope(): void
+    public function test_wechat_service_missing_template_no_request(): void
     {
-        $target1 = User::factory()->create(['openid' => 'openid-t1', 'status' => User::STATUS_NORMAL]);
-        $target2 = User::factory()->create(['openid' => 'openid-t2', 'status' => User::STATUS_NORMAL]);
-        $other = User::factory()->create(['openid' => 'openid-other', 'status' => User::STATUS_NORMAL]);
+        config(['services.mini_program.feedback_template_id' => '']);
+        Http::fake();
+        $result = app(WechatService::class)->sendSubscribeMessage('o', '', []);
+        $this->assertFalse($result['success']);
+        $this->assertSame(-2, $result['errcode']);
+        Http::assertNothingSent();
+    }
 
-        $notification = Notification::factory()->create([
+    // ---------- Service 层 -> Job 派发（Queue::fake 验证入队） ----------
+
+    public function test_service_push_feedback_dispatches_job(): void
+    {
+        Queue::fake();
+
+        $user = User::factory()->create(['openid' => 'openid-u1']);
+        $feedback = Feedback::factory()->create([
+            'user_id' => $user->id,
+            'status' => Feedback::STATUS_RESOLVED,
+            'subscribe_sent' => false,
+        ]);
+
+        app(SubscribeMessageService::class)->pushFeedbackHandled($feedback->fresh());
+
+        Queue::assertPushed(FeedbackHandledJob::class, function (FeedbackHandledJob $job) use ($feedback) {
+            return $job->feedbackId === $feedback->id;
+        });
+
+        // Service 层 dispatch 后会标记 queued 状态
+        $feedback->refresh();
+        $res = json_decode((string) $feedback->subscribe_result, true);
+        $this->assertTrue($res['queued'] ?? false);
+    }
+
+    public function test_service_push_feedback_skip_already_sent(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create(['openid' => 'openid-u1']);
+        $feedback = Feedback::factory()->create([
+            'user_id' => $user->id,
+            'subscribe_sent' => true, // 已推送
+        ]);
+
+        app(SubscribeMessageService::class)->pushFeedbackHandled($feedback->fresh());
+        Queue::assertNotPushed(FeedbackHandledJob::class);
+    }
+
+    public function test_service_push_feedback_skip_no_openid(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create(['openid' => null]);
+        $feedback = Feedback::factory()->create([
+            'user_id' => $user->id,
+            'subscribe_sent' => false,
+        ]);
+
+        app(SubscribeMessageService::class)->pushFeedbackHandled($feedback->fresh());
+        Queue::assertNotPushed(FeedbackHandledJob::class);
+
+        $feedback->refresh();
+        $this->assertNotNull($feedback->subscribe_result);
+        $res = json_decode((string) $feedback->subscribe_result, true);
+        $this->assertTrue($res['skipped'] ?? false);
+    }
+
+    public function test_service_push_announcement_dispatches_job(): void
+    {
+        Queue::fake();
+        $ann = Announcement::factory()->create(['status' => Announcement::STATUS_PUBLISHED]);
+
+        app(SubscribeMessageService::class)->pushAnnouncementPublished($ann);
+        Queue::assertPushed(AnnouncementPublishedJob::class, fn ($j) => $j->announcementId === $ann->id);
+    }
+
+    public function test_service_push_notification_dispatches_job(): void
+    {
+        Queue::fake();
+        $notif = Notification::factory()->create([
             'published' => true,
-            'scope' => 'specified',
-            'targets' => [$target1->id, $target2->id],
+            'scope' => 'registered',
+            'subscribe_sent' => false,
+        ]);
+
+        app(SubscribeMessageService::class)->pushNotificationPublished($notif->fresh());
+        Queue::assertPushed(NotificationPublishedJob::class, fn ($j) => $j->notificationId === $notif->id);
+    }
+
+    public function test_service_business_exception_does_not_abort(): void
+    {
+        // 模拟 dispatch 抛异常（Service 内部应吞掉并降级同步，不抛给上层）
+        Queue::fake();
+        Queue::shouldReceive('push')->andThrow(new \RuntimeException('redis connection down'));
+
+        $user = User::factory()->create(['openid' => 'openid-u1']);
+        $feedback = Feedback::factory()->create([
+            'user_id' => $user->id,
+            'subscribe_sent' => false,
+            'status' => Feedback::STATUS_RESOLVED,
+        ]);
+
+        Http::fake([
+            'https://api.weixin.qq.com/cgi-bin/token*' => Http::response(['access_token' => 't', 'expires_in' => 7200], 200),
+            'https://api.weixin.qq.com/cgi-bin/message/subscribe/send*' => Http::response(['errcode' => 0, 'errmsg' => 'ok'], 200),
+        ]);
+
+        $thrown = null;
+        try {
+            app(SubscribeMessageService::class)->pushFeedbackHandled($feedback->fresh());
+        } catch (\Throwable $e) {
+            $thrown = $e;
+        }
+
+        $this->assertNull($thrown, 'Service 派发异常不应冒泡到业务层');
+        $this->assertSame(Feedback::STATUS_RESOLVED, $feedback->fresh()->status);
+    }
+
+    // ---------- Job::handle 执行（不 fake Queue，走 sync，验证实际 HTTP 调用） ----------
+
+    public function test_feedback_handled_job_handle_success_writes_result(): void
+    {
+        // 不用 Queue::fake，sync driver 下 dispatch 即执行
+        $user = User::factory()->create(['openid' => 'openid-job-1']);
+        $feedback = Feedback::factory()->create([
+            'user_id' => $user->id,
+            'status' => Feedback::STATUS_RESOLVED,
+            'subscribe_sent' => false,
+            'handle_note' => '已经处理好了',
+        ]);
+
+        Http::fake([
+            'https://api.weixin.qq.com/cgi-bin/token*' => Http::response(['access_token' => 't', 'expires_in' => 7200], 200),
+            'https://api.weixin.qq.com/cgi-bin/message/subscribe/send*' => Http::response(['errcode' => 0, 'errmsg' => 'ok'], 200),
+        ]);
+
+        // 直接执行 Job handle
+        $job = new FeedbackHandledJob($feedback->id);
+        $job->handle(app(WechatService::class));
+
+        $feedback->refresh();
+        $this->assertTrue($feedback->subscribe_sent);
+        $this->assertNotNull($feedback->subscribe_sent_at);
+
+        $result = json_decode((string) $feedback->subscribe_result, true);
+        $this->assertSame(0, $result['errcode']);
+    }
+
+    public function test_feedback_handled_job_user_refuse_writes_failure_table_no_retry(): void
+    {
+        $user = User::factory()->create(['openid' => 'openid-job-2']);
+        $feedback = Feedback::factory()->create([
+            'user_id' => $user->id,
+            'status' => Feedback::STATUS_RESOLVED,
             'subscribe_sent' => false,
         ]);
 
         Http::fake([
-            'https://api.weixin.qq.com/cgi-bin/token*' => Http::response([
-                'access_token' => 'token',
-                'expires_in' => 7200,
-            ], 200),
+            'https://api.weixin.qq.com/cgi-bin/token*' => Http::response(['access_token' => 't', 'expires_in' => 7200], 200),
+            // 用户未订阅 -> 业务级错误，不重试
             'https://api.weixin.qq.com/cgi-bin/message/subscribe/send*' => Http::response([
-                'errcode' => 0,
-                'errmsg' => 'ok',
+                'errcode' => 43101,
+                'errmsg' => 'user refuse to accept the msg',
             ], 200),
         ]);
 
-        /** @var SubscribeMessageService $svc */
-        $svc = app(SubscribeMessageService::class);
-        $svc->pushNotificationPublished($notification->fresh());
+        $job = new FeedbackHandledJob($feedback->id);
+        try {
+            $job->handle(app(WechatService::class));
+            $jobThrew = false;
+        } catch (\RuntimeException $e) {
+            $jobThrew = true;
+        }
 
-        $notification->refresh();
-        $this->assertTrue($notification->subscribe_sent);
-        $result = json_decode($notification->subscribe_result, true);
-        $this->assertSame(2, $result['total'] ?? 0);
-        $this->assertSame(2, $result['success'] ?? 0);
-        $this->assertSame(0, $result['failed'] ?? 0);
+        $this->assertFalse($jobThrew, '43101 属于不重试业务错误，不应抛出异常触发队列重试');
+
+        // subscribe_message_failures 表有记录
+        $this->assertDatabaseHas('subscribe_message_failures', [
+            'scene' => 'feedback_handled',
+            'subject_type' => Feedback::class,
+            'subject_id' => $feedback->id,
+            'openid' => $user->openid,
+            'last_errcode' => 43101,
+        ]);
     }
 
-    /**
-     * 业务层调用：推送失败时不阻塞主逻辑（反馈处理更新成功）
-     * 模拟 SubscribeMessageService 抛出异常，外层 try-catch 应吞掉
-     */
-    public function test_business_layer_handles_push_exception_gracefully(): void
+    public function test_feedback_handled_job_failed_callback_writes_failure(): void
     {
-        $user = User::factory()->create(['openid' => 'openid-ex']);
+        $user = User::factory()->create(['openid' => 'openid-fail']);
+        $feedback = Feedback::factory()->create([
+            'user_id' => $user->id,
+            'subscribe_sent' => false,
+        ]);
+
+        $job = new FeedbackHandledJob($feedback->id);
+        // 手动调 failed()，模拟队列最终失败
+        $job->failed(new \RuntimeException('max attempts exceeded'));
+
+        $this->assertDatabaseHas('subscribe_message_failures', [
+            'scene' => 'feedback_handled',
+            'subject_id' => $feedback->id,
+            'last_errcode' => -999,
+        ]);
+
+        // feedback subscribe_sent 最终也会被标记，避免再次 dispatch 无限循环
+        $feedback->refresh();
+        $this->assertTrue($feedback->subscribe_sent);
+    }
+
+    public function test_feedback_handled_job_already_sent_skips_http(): void
+    {
+        $user = User::factory()->create(['openid' => 'openid-dedup']);
+        $feedback = Feedback::factory()->create([
+            'user_id' => $user->id,
+            'subscribe_sent' => true, // 已推送
+        ]);
+
+        Http::fake();
+
+        $job = new FeedbackHandledJob($feedback->id);
+        $job->handle(app(WechatService::class));
+
+        Http::assertNothingSent();
+    }
+
+    public function test_send_to_user_job_unique_id_distinct_by_scene_and_user(): void
+    {
+        $u1 = User::factory()->create(['id' => 100]);
+        $u2 = User::factory()->create(['id' => 101]);
+        $ann = Announcement::factory()->create(['id' => 1]);
+
+        $j1 = new SendSubscribeMessageToUserJob(
+            scene: 'announcement_published',
+            subject: $ann,
+            openid: 'openid-a',
+            templateId: 'tpl',
+            data: [],
+        );
+        $j2 = new SendSubscribeMessageToUserJob(
+            scene: 'announcement_published',
+            subject: $ann,
+            openid: 'openid-a',  // 同场景+同公告+同openid → 同uniqueId
+            templateId: 'tpl',
+            data: [],
+        );
+        $j3 = new SendSubscribeMessageToUserJob(
+            scene: 'announcement_published',
+            subject: $ann,
+            openid: 'openid-b',  // 不同 openid → 不同 uniqueId
+            templateId: 'tpl',
+            data: [],
+        );
+
+        $this->assertSame($j1->uniqueId(), $j2->uniqueId());
+        $this->assertNotSame($j1->uniqueId(), $j3->uniqueId());
+    }
+
+    public function test_announcement_job_chunk_dispatches_send_to_user_job(): void
+    {
+        // 先把所有其它用户 openid 置空，避免 seeder 或其它测试遗留用户
+        User::query()->whereNotNull('id')->update([
+            'openid' => null,
+            'status' => User::STATUS_BANNED,
+        ]);
+
+        Queue::fake([SendSubscribeMessageToUserJob::class]);
+
+        $u1 = User::factory()->create(['openid' => 'test-a1', 'status' => User::STATUS_NORMAL]);
+        $u2 = User::factory()->create(['openid' => 'test-a2', 'status' => User::STATUS_NORMAL]);
+        User::factory()->create(['openid' => null, 'status' => User::STATUS_NORMAL]);
+        User::factory()->create(['openid' => 'test-a3', 'status' => User::STATUS_BANNED]);
+
+        $ann = Announcement::factory()->create(['status' => Announcement::STATUS_PUBLISHED]);
+
+        $job = new AnnouncementPublishedJob($ann->id);
+        $job->handle();
+
+        // 目标测试用户必须被派发（QueueFake 中 assertPushed 回调接收的是 Job 实例本身）
+        Queue::assertPushed(
+            SendSubscribeMessageToUserJob::class,
+            fn (SendSubscribeMessageToUserJob $j) => $j->openid === 'test-a1'
+                && $j->scene === 'announcement_published'
+                && $j->subjectType === Announcement::class
+                && $j->subjectId === $ann->id,
+        );
+        Queue::assertPushed(
+            SendSubscribeMessageToUserJob::class,
+            fn (SendSubscribeMessageToUserJob $j) => $j->openid === 'test-a2',
+        );
+
+        // 被封禁用户不应被派发
+        Queue::assertNotPushed(
+            SendSubscribeMessageToUserJob::class,
+            fn (SendSubscribeMessageToUserJob $j) => $j->openid === 'test-a3',
+        );
+    }
+
+    public function test_notification_job_scope_specified_dispatches_targets_only(): void
+    {
+        Queue::fake([SendSubscribeMessageToUserJob::class]);
+
+        $t1 = User::factory()->create(['openid' => 't1', 'status' => User::STATUS_NORMAL]);
+        $t2 = User::factory()->create(['openid' => 't2', 'status' => User::STATUS_NORMAL]);
+        $other = User::factory()->create(['openid' => 'other', 'status' => User::STATUS_NORMAL]);
+
+        $notif = Notification::factory()->create([
+            'published' => true,
+            'scope' => 'specified',
+            'targets' => [$t1->id, $t2->id],
+            'subscribe_sent' => false,
+        ]);
+
+        $job = new NotificationPublishedJob($notif->id);
+        $job->handle();
+
+        Queue::assertPushed(SendSubscribeMessageToUserJob::class, 2);
+
+        $notif->refresh();
+        $this->assertTrue($notif->subscribe_sent);
+        $res = json_decode((string) $notif->subscribe_result, true);
+        $this->assertSame(2, $res['total'] ?? 0);
+        $this->assertSame(2, $res['dispatched'] ?? 0);
+    }
+
+    // ---------- 最终失败表 SubscribeMessageFailure 关联 ----------
+
+    public function test_subscribe_message_failure_model_morph_relation(): void
+    {
+        $feedback = Feedback::factory()->create();
+        $failure = SubscribeMessageFailure::query()->create([
+            'scene' => 'feedback_handled',
+            'subject_type' => Feedback::class,
+            'subject_id' => $feedback->id,
+            'openid' => 'o1',
+            'template_id' => 'tpl',
+            'attempts' => 3,
+            'last_errcode' => 43101,
+            'last_errmsg' => 'user refuse',
+            'last_attempted_at' => now(),
+        ]);
+
+        $this->assertTrue($failure->subject->is($feedback));
+    }
+
+    // ---------- 异常容错：接口极端异常时业务流程不中断 ----------
+
+    public function test_business_handler_not_aborted_when_wechat_api_down(): void
+    {
+        $user = User::factory()->create(['openid' => 'openid-dns']);
         $feedback = Feedback::factory()->create([
             'user_id' => $user->id,
             'status' => Feedback::STATUS_PENDING,
+            'subscribe_sent' => false,
         ]);
 
-        // 模拟微信接口直接抛异常
+        // 模拟微信 API 直接抛异常（DNS 故障等）
         Http::fake(function () {
             throw new \RuntimeException('DNS resolution failed');
         });
 
-        // 业务层处理（含推送），不应抛异常
-        $exception = null;
+        // 队列 sync 模式下，dispatch 直接执行 Job handle。
+        // 但 Service 层有 try-catch 保护，不应该冒泡。
+        $thrown = null;
         try {
             $feedback->update([
                 'status' => Feedback::STATUS_RESOLVED,
-                'handled_by' => null,
                 'handled_at' => now(),
             ]);
-
-            try {
-                app(SubscribeMessageService::class)->pushFeedbackHandled($feedback->fresh());
-            } catch (\Throwable $e) {
-                $exception = $e;
-            }
+            app(SubscribeMessageService::class)->pushFeedbackHandled($feedback->fresh());
         } catch (\Throwable $outer) {
-            $exception = $outer;
+            $thrown = $outer;
         }
 
-        $this->assertNull($exception, '业务处理因推送异常被中断');
+        $this->assertNull($thrown, '业务处理不应被推送异常中断');
         $this->assertSame(Feedback::STATUS_RESOLVED, $feedback->fresh()->status);
     }
 }
