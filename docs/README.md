@@ -23,6 +23,7 @@
 | [structure.md](./structure.md) | 目录结构与核心文件职责 |
 | [testing.md](./testing.md) | 测试指南（单元测试 / 功能测试 / CI） |
 | [admin.md](./admin.md) | 管理后台使用指南（FilamentPHP） |
+| [roadmap.md](./roadmap.md) | 后台功能规划（缺口分析与 P1-P4 优先级） |
 | [changelog.md](./changelog.md) | 版本变更记录 |
 
 ---
