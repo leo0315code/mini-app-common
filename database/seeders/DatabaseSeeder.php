@@ -28,6 +28,11 @@ class DatabaseSeeder extends Seeder
             Role::firstOrCreate(['slug' => $role['slug']], $role);
         }
 
+        // 创建菜单（RBAC 权限树）
+        $this->call([
+            MenusTableSeeder::class,
+        ]);
+
         // 创建管理员账号
         $admin = User::firstOrCreate(
             ['email' => '453507012@qq.com'],

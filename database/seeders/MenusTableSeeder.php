@@ -92,8 +92,17 @@ class MenusTableSeeder extends Seeder
 
         $superAdmin = Role::where('slug', 'super-admin')->first();
         if ($superAdmin) {
-            $superAdmin->menus()->attach(Menu::all()->pluck('id')->toArray());
-            echo "超级管理员已分配所有菜单权限\n";
+            // Menu::created 事件已自动分配新菜单给 super-admin
+            // 此处确保所有菜单都被分配（兼容 created 事件可能未触发的场景）
+            $menuIds = Menu::all()->pluck('id')->toArray();
+            $existingIds = $superAdmin->menus()->pluck('menu_id')->toArray();
+            $missingIds = array_diff($menuIds, $existingIds);
+            if (! empty($missingIds)) {
+                $superAdmin->menus()->attach($missingIds);
+                echo "已补充分配 " . count($missingIds) . " 个菜单权限给超级管理员\n";
+            } else {
+                echo "超级管理员已拥有全部菜单权限\n";
+            }
         }
 
         echo "菜单初始化完成，共 " . Menu::count() . " 条记录\n";
