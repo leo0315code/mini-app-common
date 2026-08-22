@@ -12,6 +12,17 @@ class Menu extends Model
 {
     use HasFactory;
 
+    protected static function booted(): void
+    {
+        static::created(function (self $menu) {
+            // 自动将新菜单分配给所有“超级管理员”角色
+            $superAdminRoles = Role::query()->where('slug', 'super-admin')->get();
+            foreach ($superAdminRoles as $role) {
+                $role->menus()->syncWithoutDetaching([$menu->id]);
+            }
+        });
+    }
+
     protected $fillable = [
         'parent_id',
         'name',
