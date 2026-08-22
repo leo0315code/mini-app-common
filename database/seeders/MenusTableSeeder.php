@@ -5,17 +5,32 @@ namespace Database\Seeders;
 use App\Models\Menu;
 use App\Models\Role;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 
 class MenusTableSeeder extends Seeder
 {
     public function run(): void
     {
+        $isProd = App::environment('production');
+        $hasMenus = Menu::count() > 0;
+
+        if ($isProd && $hasMenus) {
+            echo "⚠️  生产环境检测到已有菜单数据，跳过 truncate\n";
+
+            return;
+        }
+
         DB::statement('SET FOREIGN_KEY_CHECKS = 0');
         Menu::truncate();
         DB::table('menu_role')->truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS = 1');
 
+        $this->seedMenus();
+    }
+
+    protected function seedMenus(): void
+    {
         $dashboard = Menu::create([
             'name' => '仪表盘',
             'slug' => 'dashboard',

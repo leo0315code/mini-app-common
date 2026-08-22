@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\ArticleFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,21 +27,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  */
+#[Fillable([
+    'category_id', 'title', 'slug', 'cover', 'summary', 'content',
+    'status', 'is_top', 'views', 'created_by', 'published_at',
+])]
 class Article extends Model
 {
     /** @use HasFactory<ArticleFactory> */
     use HasFactory;
 
-    protected $fillable = [
-        'category_id', 'title', 'slug', 'cover', 'summary', 'content',
-        'status', 'is_top', 'views', 'created_by', 'published_at',
-    ];
-
-    protected $casts = [
-        'is_top' => 'boolean',
-        'views' => 'integer',
-        'published_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'is_top' => 'boolean',
+            'views' => 'integer',
+            'published_at' => 'datetime',
+        ];
+    }
 
     public const STATUS_DRAFT = 'draft';
     public const STATUS_PUBLISHED = 'published';

@@ -81,13 +81,20 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * 指派角色（按 slug）
+     * 指派角色（按 slug）。
+     * 仅添加角色，不清除已有角色；变更后立即清除权限缓存。
      */
     public function assignRole(string $slug): void
     {
-        if ($role = Role::where('slug', $slug)->first()) {
-            $this->roles()->syncWithoutDetaching([$role->id]);
+        $role = Role::where('slug', $slug)->first();
+
+        if (! $role) {
+            return;
         }
+
+        $this->roles()->syncWithoutDetaching([$role->id]);
+
+        app(\App\Support\MenuPermissionManager::class)->clearUserCache($this);
     }
 
     /**

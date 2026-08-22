@@ -120,6 +120,52 @@ class UserBanTest extends TestCase
     }
 
     /**
+     * 中间件正常用户放行：auth.banned 对未封禁用户应返回 200。
+     */
+    public function test_normal_user_passes_banned_middleware(): void
+    {
+        $user = User::factory()->create(['status' => User::STATUS_NORMAL]);
+        $token = $this->loginUser($user);
+
+        $this->getJson('/api/user', ['Authorization' => 'Bearer ' . $token])
+            ->assertStatus(200);
+    }
+
+    /**
+     * 中间件封禁原因展示：有 ban_reason 时响应体应包含原因。
+     */
+    public function test_banned_reason_shown_in_response(): void
+    {
+        $user = User::factory()->create([
+            'status' => User::STATUS_BANNED,
+            'ban_reason' => '发布违规内容',
+        ]);
+        $token = $this->loginUser($user);
+
+        $this->getJson('/api/user', ['Authorization' => 'Bearer ' . $token])
+            ->assertStatus(403)
+            ->assertJsonPath('code', 40301)
+            ->assertJsonPath('message', '账号已被封禁：发布违规内容');
+    }
+
+    /**
+     * 中间件封禁无原因展示：无 ban_reason 时返回通用提示。
+     */
+    public function test_banned_no_reason_shows_generic_message(): void
+    {
+        $user = User::factory()->create([
+            'status' => User::STATUS_BANNED,
+            'ban_reason' => null,
+        ]);
+        $token = $this->loginUser($user);
+
+        $this->getJson('/api/user', ['Authorization' => 'Bearer ' . $token])
+            ->assertStatus(403)
+            ->assertJsonPath('code', 40301)
+            ->assertJsonPath('message', '账号已被封禁');
+    }
+
+    /**
      * 用户列表页渲染含状态列、封禁/解封动作入口。
      * 创建一个已封禁用户，使「解封」动作对其实行渲染；普通用户行出现「封禁」入口。
      */

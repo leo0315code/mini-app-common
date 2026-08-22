@@ -110,6 +110,8 @@ class RolePresetTemplates
 
         $role->menus()->sync($menuIds);
 
+        app(MenuPermissionManager::class)->clearUserCache($role);
+
         return $role;
     }
 

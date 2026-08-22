@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,18 +22,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $handled_at
  * @property \Illuminate\Support\Carbon $created_at
  */
+#[Fillable([
+    'user_id', 'type', 'content', 'contact',
+    'status', 'handle_note', 'handled_by', 'handled_at',
+])]
 class Feedback extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'user_id', 'type', 'content', 'contact',
-        'status', 'handle_note', 'handled_by', 'handled_at',
-    ];
-
-    protected $casts = [
-        'handled_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'handled_at' => 'datetime',
+        ];
+    }
 
     public const TYPE_SUGGESTION = 'suggestion';
     public const TYPE_BUG = 'bug';

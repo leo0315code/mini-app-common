@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,17 +20,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $created_by
  * @property \Illuminate\Support\Carbon $created_at
  */
+#[Fillable([
+    'title', 'content', 'type', 'status', 'published_at', 'created_by',
+])]
 class Announcement extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'title', 'content', 'type', 'status', 'published_at', 'created_by',
-    ];
-
-    protected $casts = [
-        'published_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'published_at' => 'datetime',
+        ];
+    }
 
     public const TYPE_NOTICE = 'notice';
     public const TYPE_ACTIVITY = 'activity';
