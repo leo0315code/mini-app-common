@@ -19,7 +19,20 @@
 
 ---
 
-## [v1.8.0] - 2026-08-21
+## [v1.10.0] - 2026-08-22
+
+后台工作台运营指标扩展（roadmap P1 第 3 项，纯后台，不改表结构）：
+
+- **运营指标卡片** `app/Filament/Widgets/OpexStatsWidget.php`：新增 6 张统计卡——待处理反馈数（pending）、通知已读率（基于 `notification_user` 回执表 read 比例）、内容总量（公告 + 文章）、媒体占用（bytes + 文件数）、今日 API 调用（Token `last_used_at` 当日活跃计数）、封禁用户数。
+- **待处理反馈表** `app/Filament/Widgets/PendingFeedbackTable.php`：工作台新增表格 widget，展示最新 10 条 pending 反馈（类型徽标 / 内容 / 联系方式 / 提交时间），提供「去处理」动作直达反馈编辑页。
+- **接入 Dashboard** `app/Filament/Pages/Dashboard.php`：两个新 widget 已注册到工作台布局（运营指标卡接在用户统计卡之后、待处理反馈表接在最近注册用户之后），欢迎区说明同步更新。
+- **测试** `tests/Feature/AdminDashboardTest.php`：工作台可访问性（admin OK / 成员 Forbidden）+ `OpexStatsWidget::getStats()` 单元级断言（6 卡结构、关键口径、pending 计数）。
+- **说明**：StatsOverviewWidget 为 Livewire 异步组件，初始 HTML 不含卡片文本，故测试对 `getStats()` 直接断言而非页面文本。
+- 部署无需迁移；Docker 环境下已通过真实 MySQL 校验统计口径准确。
+
+---
+
+## [v1.9.0] - 2026-08-22
 
 后台体验打磨（纯 UI/交互，不改表结构）：
 

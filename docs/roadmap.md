@@ -38,9 +38,8 @@
 - 中间件 `EnsureUserNotBanned` 拦截受保护接口（40301）；登录同步校验封禁状态。
 - 后台用户列表「状态」徽标列 + 状态筛选 + 封禁/解封动作。
 
-### 3. 仪表盘运营维度扩展
-- **现状缺口**：工作台只有用户注册统计（`UserStatsWidget` / 注册趋势 / 性别分布 / 最近注册），运营同学关心的内容与工单数据完全看不到。
-- **落地要点**：新增 widgets——待处理反馈数（含趋势）、通知已读率、公告/文章数量、媒体存储占用、今日 API 调用量（Token last_used 统计）。
+### 3. 仪表盘运营维度扩展 ✅ 已落地（v1.10.0）
+- 工作台新增 `OpexStatsWidget`（待处理反馈数、通知已读率、内容总量、媒体占用、今日 API 调用、封禁用户数）+ `PendingFeedbackTable`（待处理反馈直达处理），统计口径已在 Docker 真实 MySQL 校验。
 
 ### 4. 数据导出（Excel/CSV）
 - **现状缺口**：所有列表均无导出，用户名单、反馈明细只能截图。
@@ -117,3 +116,11 @@
 | 中期 | P2（权限、登录安全、定时发布、Banner） | v2.x |
 | 空闲穿插 | P3 体验项（每项独立小版本） | v2.x patch |
 | 远期 | P4 架构演进 | v3.0（破坏性） |
+
+---
+
+## 已知工程问题（非本迭代引入，待 P3 修复）
+
+- **`tests/Feature/CmsTest` 编辑页 404（2 例）**：`/admin/articles/{id}/edit` 与 `/admin/categories/{id}/edit` 在测试中返回 404。Edit 页面定义（`extends EditRecord` + `$resource`）与 `getPages()` 路由均正常，疑为 Filament v5 编辑页在测试 HTTP 引导下的渲染/路由解析问题，需单独排查。
+- **`tests/Feature/PhoneTest::test_bind_phone_success` 401**：`PhoneController::bind` 在 `WechatService::getPhoneNumber` 抛 `RuntimeException` 时 catch 返回 401。测试中 `Http::fake` 序列与 `@code` 校验逻辑需核对，属用例/服务桩问题，非接口缺陷。
+- 以上 3 例在 v1.9.0 基线即存在，P1-3 仪表盘扩展未引入任何回归。

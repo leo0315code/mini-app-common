@@ -4,6 +4,8 @@ namespace App\Filament\Pages;
 
 use App\Filament\Resources\UserResource;
 use App\Filament\Widgets\GenderDistributionChart;
+use App\Filament\Widgets\OpexStatsWidget;
+use App\Filament\Widgets\PendingFeedbackTable;
 use App\Filament\Widgets\RecentUsersTable;
 use App\Filament\Widgets\UserRegistrationChart;
 use App\Filament\Widgets\UserStatsWidget;
@@ -92,19 +94,20 @@ class Dashboard extends BaseDashboard
         return $schema
             ->components([
                 Section::make('欢迎回来 👋')
-                    ->description('这里汇总了小程序用户的核心指标与最新动态，数据每 30 秒自动刷新。')
+                    ->description('这里汇总了小程序用户与运营的核心指标及最新动态。')
                     ->aside()
                     ->schema([
                         UnorderedList::make([
-                            Text::make('上方统计卡片：总用户数、今日 / 本周新增与手机绑定率。'),
+                            Text::make('上方统计卡片：总用户数、手机绑定率，以及待处理反馈、通知已读率、内容/媒体、今日 API 调用、封禁用户等运营指标。'),
                             Text::make('「用户注册趋势」与「性别分布」图表帮助了解增长与结构。'),
-                            Text::make('「最近注册用户」列出最新 10 名小程序用户，可点进用户管理操作。'),
+                            Text::make('「最近注册用户」与「待处理反馈」表列出最新动态，可点进对应资源操作。'),
                         ]),
                     ])
                     ->collapsible(),
 
                 ...$this->getWidgetsSchemaComponents([
                     UserStatsWidget::class,
+                    OpexStatsWidget::class,
                 ]),
 
                 Grid::make(2)
@@ -117,6 +120,7 @@ class Dashboard extends BaseDashboard
 
                 ...$this->getWidgetsSchemaComponents([
                     RecentUsersTable::class,
+                    PendingFeedbackTable::class,
                 ]),
             ]);
     }
