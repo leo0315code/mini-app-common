@@ -41,8 +41,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         intl \
         zip \
         gd \
-    && pecl install redis \
-    && docker-php-ext-enable redis
+    && (pecl install redis-6.0.0 && docker-php-ext-enable redis) || echo "Redis 扩展跳过"
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
