@@ -106,9 +106,9 @@
 
 ## P4 — 架构演进
 
-### 14. 多小程序（多租户）
-- **现状缺口**：README 定位「一套后台接入任意小程序」，但实际单一 `app_id`，用户表无租户维度，接第二个小程序就要整套复制。
-- **落地要点**：`apps` 表 + `users.app_id` 外键隔离 + 微信凭证按租户配置；这是 v2.0 级别的破坏性变更，需先冻结 P1-P3。
+### 14. 多小程序（多租户）❌ 已排除（用户决定不需要）
+- **决策**：用户明确不需要多租户能力。本产品定位为「单一小程序配套的运营后台」，不预留 `app_id`/租户隔离维度。
+- **影响**：保持当前单一 `app_id` + 单租户架构；用户表不引入 `app_id` 外键；README 中「接入任意小程序」的描述应修正为「配套单个小程序的运营后台」，避免误导。后续不在此投入。
 
 ### 15. 消息渠道抽象
 - 站内信（已有）+ 订阅消息（P1）+ 短信/邮件统一为 `NotificationChannel` 抽象，通知派发按用户订阅偏好降级发送。
@@ -129,7 +129,7 @@
 | 近期 | P1 全部（订阅消息、封禁、仪表盘、导出） | v1.9.0 ~ v1.16.0 |
 | 中期 | P2 权限（v1.12）、登录安全审计+改密码（v1.17）、登录限流（v1.18）、定时发布（v1.13 调度器）、Banner（v1.17） | v1.12.0 ~ v1.18.0 |
 | 空闲穿插 | P3 体验项（用户详情聚合页 v1.13、富文本插图 v1.13、审计覆盖补全 v1.13、软删除回收站 v1.19、Token 会话管理 v1.21） | v1.13.0 ~ v1.21.0 |
-| 远期 | P4 架构演进（多租户 v2.0、消息渠道抽象、备份；工程化门禁 v1.22） | v3.0（破坏性，门禁 v1.22.0 已落地） |
+| 远期 | P4 架构演进（消息渠道抽象、备份；工程化门禁 v1.22） | v3.0（门禁 v1.22.0 已落地；多租户已排除） |
 
 ---
 
@@ -138,3 +138,9 @@
 - **`tests/Feature/CmsTest` 编辑页 404（2 例）**：`/console/articles/{id}/edit` 与 `/console/categories/{id}/edit` 在测试中返回 404。Edit 页面定义（`extends EditRecord` + `$resource`）与 `getPages()` 路由均正常，疑为 Filament v5 编辑页在测试 HTTP 引导下的渲染/路由解析问题，需单独排查。
 - **`tests/Feature/PhoneTest::test_bind_phone_success` 401**：`PhoneController::bind` 在 `WechatService::getPhoneNumber` 抛 `RuntimeException` 时 catch 返回 401。测试中 `Http::fake` 序列与 `@code` 校验逻辑需核对，属用例/服务桩问题，非接口缺陷。
 - 以上 3 例在 v1.9.0 基线即存在，P1-3 仪表盘扩展未引入任何回归。
+
+## 后台交互改造（弹窗化）
+
+- **用户管理 新增/编辑/详情 全部改为弹窗（Modal）**：移除 `getPages()` 的 `create`/`edit`/`view` 整页，删除 `Pages/CreateUser.php`、`Pages/EditUser.php`、`Pages/ViewUser.php`；列表 `recordActions` 用 `ViewAction::make()->schema(...)`、`EditAction::make()` 自带 modal，新增「撤销全部 Token」行内 action（原详情页底部动作）。
+- **修复详情页的 Filament v5 兼容性隐藏 bug**：原 `ViewUser` 整页详情页在升级 v5 后从未真正可渲染——`Split`/`TextEntry`/`KeyValue`/`RepeatableEntry` 用在了不存在的 `Schemas\Components` 命名空间、`RepeatableEntry` 误用已删除的 `relationship`/`defaultItems` 等方法、`formatStateUsing` 闭包参数名误用 `$s`（框架要求 `$state`）、审计查询误用不存在的 `actor_id` 列（实际为 `user_id`）。本次按 v5 正确 API 重写，并补 `tests/Feature/UserViewModalTest.php` 端到端验证弹窗渲染不崩。
+- ⚠️ **若要把其他资源（文章/公告/媒体/角色等）也统一改为弹窗风格**，可参照此模式，但需同样排查各自的 v5 infolist/action API 兼容性；建议逐个资源确认，不要一次性批量删除整页文件。

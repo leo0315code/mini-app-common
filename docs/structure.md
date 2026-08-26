@@ -216,7 +216,7 @@ mini-app-common/
 
 - **新增业务接口**：在 `routes/api.php` 以 `/api` 前缀、`auth:sanctum` 保护下注册；Controller 放 `app/Http/Controllers/`。
 - **换小程序**：仅改 `.env` 的 `MINI_PROGRAM_APP_ID` / `SECRET`，无需改动代码。
-- **多小程序共用**：可在 `users` 增加 `app_id` 列并在 `openid` 上做联合唯一；v1.0.0 默认单小程序单库部署。
+- **多小程序共用**：本后台当前不提供多租户能力（单一小程序配套）。如需多小程序共用，须自行在 `users` 增加 `app_id` 列并在 `openid` 上做联合唯一，并改造微信凭证按租户隔离——属于破坏性扩展，不在当前范围。
 - **加业务表**：`php artisan make:migration` 新建迁移，遵循 `database.md` 命名规范。
 
 ---

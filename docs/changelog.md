@@ -391,7 +391,7 @@ RBAC 权限系统完善 + 技术债清理：
 - **用户查询**：`GET /api/user`，获取当前登录用户信息
 - **退出登录**：`POST /api/auth/logout`，吊销当前 Token
 - **用户模型**：`users` 表扩展 `openid`、`unionid`、`nickname`、`avatar`、`gender`、`meta` 字段
-- **配置驱动**：`.env` 中配置 `MINI_PROGRAM_APP_ID` / `MINI_PROGRAM_SECRET` 即可接入任意小程序
+- **配置驱动**：`.env` 中配置 `MINI_PROGRAM_APP_ID` / `MINI_PROGRAM_SECRET` 即可配套单个小程序（当前定位为单一小程序运营后台，不提供多租户 / 多小程序共用能力）
 - **Sanctum 鉴权**：基于 Bearer Token 的 API 鉴权，适配小程序无 Cookie 场景
 - **完整文档**：安装、配置、鉴权 API、数据库设计、目录结构、测试指南
 
