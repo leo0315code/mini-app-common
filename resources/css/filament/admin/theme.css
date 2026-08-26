@@ -147,9 +147,106 @@
     @apply bg-gray-50/80 font-semibold text-gray-600 dark:bg-white/5 dark:text-gray-300;
 }
 
+/* 列表工具条（搜索/筛选/列管理所在行）极淡品牌渐变薄洗，融入品牌体系又不过度 */
+.fi-ta-header-toolbar {
+    @apply bg-gradient-to-r from-brand-500/[0.04] to-accent-500/[0.04];
+}
+
+/* 已激活的筛选触发按钮：品牌淡底 + 品牌字，呼应激活态语义 */
+.fi-ta-filters-trigger-action-ctn .fi-btn.fi-color.fi-color-gray:not(.fi-outlined),
+.fi-ta-filters-trigger-action-ctn .fi-btn.fi-active:not(.fi-outlined) {
+    @apply bg-brand-500/10 text-brand-600 dark:bg-white/10 dark:text-white/80;
+
+    & > .fi-icon {
+        @apply text-brand-600 dark:text-white/80;
+    }
+}
+
 /* ---------- 面包屑 ---------- */
 .fi-breadcrumbs {
     @apply text-sm;
+}
+
+/* ---------- 下拉菜单项（Select / 操作菜单 / 批量操作，无处不在） ---------- */
+/* 默认（非语义色）菜单项 hover/聚焦：品牌淡底 + 品牌字，与列表行 hover 同源；
+   带 fi-color 的语义项（危险/成功等）保持原色 hover，不污染对比层级 */
+.fi-dropdown-list-item:not(.fi-color) {
+    &:not(.fi-disabled):not([disabled]) {
+        @apply hover:bg-brand-500/[0.07] focus-visible:bg-brand-500/[0.07] dark:hover:bg-white/5 dark:focus-visible:bg-white/5;
+
+        &:hover,
+        &:focus-visible {
+            & .fi-dropdown-list-item-label,
+            & > .fi-icon {
+                @apply text-brand-600 dark:text-white/90;
+            }
+        }
+    }
+
+    /* 选中（如 Select 当前值 / 单列排序选中）项：品牌淡底 + 品牌字，一眼可辨 */
+    &.fi-selected {
+        @apply bg-brand-500/[0.07] dark:bg-white/5;
+
+        & .fi-dropdown-list-item-label,
+        & > .fi-icon {
+            @apply text-brand-600 dark:text-white/90;
+        }
+    }
+}
+
+/* ---------- 页面一级标题（品牌竖条，与 Section 标题同源） ---------- */
+.fi-header-heading {
+    @apply relative pl-3;
+
+    &::before {
+        content: '';
+        @apply absolute left-0 top-1/2 h-[1.1em] w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-brand-500 to-accent-500;
+    }
+}
+
+/* ---------- 标签页 Tab（高频导航，纳入品牌点缀语言） ---------- */
+/* 活跃页签：底部品牌渐变下划线条 + 文字加粗，与侧栏/分页器同源 */
+.fi-tabs-item.fi-active {
+    @apply relative;
+
+    & .fi-tabs-item-label {
+        @apply font-semibold;
+    }
+
+    &::after {
+        content: '';
+        @apply absolute inset-x-2 -bottom-px z-10 block h-0.5 rounded-full bg-gradient-to-r from-brand-500 to-accent-500;
+    }
+}
+
+/* 非活跃页签 hover：品牌淡色底 + 品牌文字，弱化默认灰阶 */
+.fi-tabs-item:not(.fi-active) {
+    @apply transition duration-150;
+
+    &:hover {
+        @apply bg-brand-500/5 text-brand-600 dark:bg-white/5 dark:text-white/80;
+
+        & .fi-tabs-item-label,
+        & > .fi-icon {
+            @apply text-brand-600 dark:text-white/80;
+        }
+    }
+}
+
+/* ---------- 主操作按钮（CTA）：品牌渐变实底，锚定互动焦点 ---------- */
+/* 仅作用于 primary，危险/成功等语义色保持实底以维持对比层级；
+   选择器带 .fi-color 以压过 Filament 默认 .fi-color 实底规则（同特异性、后加载胜出） */
+.fi-btn.fi-color.fi-color-primary:not(.fi-outlined) {
+    @apply bg-gradient-to-r from-brand-500 to-accent-500 text-white shadow-md shadow-brand-500/20;
+
+    & > .fi-icon {
+        @apply text-white;
+    }
+
+    &.fi-force-enabled,
+    &:not(.fi-disabled):not([disabled]) {
+        @apply hover:from-brand-600 hover:to-accent-500 focus-visible:ring-brand-500/50;
+    }
 }
 
 /* ---------- 空状态图标（高频元素，品牌化） ---------- */
