@@ -117,6 +117,16 @@
 
 .fi-section-header-heading {
     @apply text-lg font-bold tracking-tight;
+
+    /* 标题左侧品牌渐变竖条，强化区块识别度 */
+    &:not(:empty) {
+        @apply relative pl-3;
+
+        &::before {
+            content: '';
+            @apply absolute left-0 top-1/2 h-[1.1em] w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-brand-500 to-accent-500;
+        }
+    }
 }
 
 /* ---------- 顶栏 ---------- */
@@ -142,7 +152,20 @@
     @apply text-sm;
 }
 
-/* ---------- 富文本编辑器 ---------- */
+/* ---------- 弹窗 ---------- */
+/* 弹窗窗口顶部渐变条，与登录卡片/统计卡片的点缀语言呼应 */
+.fi-modal-window {
+    @apply overflow-hidden;
+
+    &::before {
+        content: '';
+        @apply block h-1 w-full bg-gradient-to-r from-brand-500 to-accent-500;
+    }
+}
+
+.fi-modal-header {
+    @apply border-b border-gray-100 dark:border-white/5;
+}
 .fi-fo-rich-editor .fi-fo-rich-editor-main .fi-fo-rich-editor-content {
     min-height: 28rem;
 }
@@ -155,4 +178,9 @@
 /* 通知列表：未发布（用户端不可见）行淡化 */
 .fi-ta-row-unpublished > td {
     opacity: 0.55;
+}
+
+/* 用户列表：已封禁行整行淡红高亮，一眼可辨 */
+.fi-ta-row-banned > td {
+    background-color: rgb(254 226 226 / 0.55);
 }

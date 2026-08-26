@@ -516,6 +516,7 @@ class UserResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->recordClasses(fn (User $record): ?string => $record->status === User::STATUS_BANNED ? 'fi-ta-row-banned' : null)
             ->filters([
                 SelectFilter::make('status')
                     ->label('状态')
