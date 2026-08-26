@@ -67,7 +67,7 @@ class BannerTest extends TestCase
         $member->roles()->detach();
 
         $this->actingAs($member)
-            ->get('/admin/banners')
+            ->get('/console/banners')
             ->assertForbidden();
     }
 
@@ -77,7 +77,7 @@ class BannerTest extends TestCase
         $admin->assignRole('super-admin');
 
         $this->actingAs($admin)
-            ->get('/admin/banners')
+            ->get('/console/banners')
             ->assertOk();
     }
 

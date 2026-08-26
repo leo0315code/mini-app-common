@@ -73,7 +73,7 @@ class AdminAuthSecurityTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)
-            ->get('/admin/edit-password')
+            ->get('/console/edit-password')
             ->assertOk();
     }
 

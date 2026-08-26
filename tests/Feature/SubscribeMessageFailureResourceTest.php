@@ -66,7 +66,7 @@ class SubscribeMessageFailureResourceTest extends TestCase
     public function test_super_admin_can_access_index(): void
     {
         $this->actingAs($this->superAdmin())
-            ->get('/admin/subscribe-message-failures')
+            ->get('/console/subscribe-message-failures')
             ->assertStatus(200);
     }
 
@@ -78,7 +78,7 @@ class SubscribeMessageFailureResourceTest extends TestCase
         $failure = $this->makeFailure();
 
         $this->actingAs($this->superAdmin())
-            ->get("/admin/subscribe-message-failures/{$failure->id}")
+            ->get("/console/subscribe-message-failures/{$failure->id}")
             ->assertStatus(200);
     }
 
@@ -88,7 +88,7 @@ class SubscribeMessageFailureResourceTest extends TestCase
     public function test_cannot_create_failure(): void
     {
         $this->actingAs($this->superAdmin())
-            ->get('/admin/subscribe-message-failures/create')
+            ->get('/console/subscribe-message-failures/create')
             ->assertStatus(404);
     }
 
@@ -104,7 +104,7 @@ class SubscribeMessageFailureResourceTest extends TestCase
         ]);
 
         $this->actingAs($member)
-            ->get('/admin/subscribe-message-failures')
+            ->get('/console/subscribe-message-failures')
             ->assertStatus(403);
     }
 

@@ -178,7 +178,7 @@ class UserBanTest extends TestCase
         User::factory()->create(['status' => User::STATUS_BANNED]);
 
         $this->actingAs($admin)
-            ->get('/admin/users')
+            ->get('/console/users')
             ->assertOk()
             ->assertSee('状态')
             ->assertSee('封禁')

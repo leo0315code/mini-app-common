@@ -33,14 +33,14 @@ class AdminDashboardTest extends TestCase
     public function test_dashboard_accessible_and_role_guarded(): void
     {
         $admin = $this->admin();
-        $this->actingAs($admin)->get('/admin')->assertOk();
+        $this->actingAs($admin)->get('/console')->assertOk();
 
         $member = User::factory()->create([
             'openid' => 'oTEST_' . uniqid(),
             'email' => null,
             'password' => null,
         ]);
-        $this->actingAs($member)->get('/admin')->assertForbidden();
+        $this->actingAs($member)->get('/console')->assertForbidden();
     }
 
     /**

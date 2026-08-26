@@ -95,7 +95,7 @@ class CmsTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)
-            ->get('/admin/categories')
+            ->get('/console/categories')
             ->assertOk();
     }
 
@@ -107,7 +107,7 @@ class CmsTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)
-            ->get('/admin/articles')
+            ->get('/console/articles')
             ->assertOk();
     }
 
@@ -121,7 +121,7 @@ class CmsTest extends TestCase
         $target = $articles->last();
 
         $this->actingAs($admin)
-            ->get('/admin/articles/' . $target->id . '/edit')
+            ->get('/console/articles/' . $target->id . '/edit')
             ->assertOk();
     }
 
@@ -135,7 +135,7 @@ class CmsTest extends TestCase
         $target = $categories->last();
 
         $this->actingAs($admin)
-            ->get('/admin/categories/' . $target->id . '/edit')
+            ->get('/console/categories/' . $target->id . '/edit')
             ->assertOk();
     }
 

@@ -18,6 +18,18 @@
 
 ---
 
+## [v1.20.0] - 2026-08-26
+
+后台地址前缀由 `/admin` 改为 `/console`：
+
+- `app/Providers/Filament/AdminPanelProvider.php` 的 `->path('admin')` → `->path('console')`（面板 `id('admin')` 为内部标识、不变）。
+- 后台登录、列表、编辑等所有 Filament 路由自动迁移至 `/console/...`。
+- 同步修订 8 个测试文件中硬编码的 `/admin` 路径（`AdminDashboardTest`、`CmsTest`、`SystemConfigTest`、`BannerTest`、`AdminAuthSecurityTest`、`UserBanTest`、`SubscribeMessageFailureResourceTest`、`ListActionsProbeTest`）。
+- 部署配置（Nginx/Docker）无需改动：路由由 Laravel 动态生成。
+- **测试**：全量 **129 passed (350 assertions)**（本地 PHP 8.3.30 + SQLite）。
+
+---
+
 ## [v1.18.0] - 2026-08-26
 
 后台登录防爆破限流（P2-6 收尾）：

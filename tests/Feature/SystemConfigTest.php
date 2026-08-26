@@ -25,8 +25,8 @@ class SystemConfigTest extends TestCase
      */
     public function test_system_config_requires_auth(): void
     {
-        $this->get('/admin/system-config')
-            ->assertRedirect('/admin/login');
+        $this->get('/console/system-config')
+            ->assertRedirect('/console/login');
     }
 
     /**
@@ -35,7 +35,7 @@ class SystemConfigTest extends TestCase
     public function test_admin_can_view_system_config(): void
     {
         $this->actingAs($this->admin(), 'web')
-            ->get('/admin/system-config')
+            ->get('/console/system-config')
             ->assertOk();
     }
 
