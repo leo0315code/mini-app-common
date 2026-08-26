@@ -6,10 +6,14 @@ use App\Filament\Resources\AnnouncementResource\Pages;
 use App\Models\Announcement;
 use App\Models\User;
 use App\Support\ManagesRichEditorAttachments;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\ForceDeleteBulkAction;
+use Filament\Actions\RestoreAction;
+use Filament\Actions\RestoreBulkAction;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Resources\Resource;
@@ -20,6 +24,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\TrashedFilter;
 use Illuminate\Database\Eloquent\Builder;
 
 class AnnouncementResource extends Resource
@@ -165,14 +170,19 @@ class AnnouncementResource extends Resource
                         false: fn (Builder $query) => $query->where('status', '!=', Announcement::STATUS_PUBLISHED),
                         blank: fn (Builder $query) => $query,
                     ),
+                TrashedFilter::make()->label('回收站'),
             ])
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),
+                RestoreAction::make(),
+                ForceDeleteAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
+                    RestoreBulkAction::make(),
+                    ForceDeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

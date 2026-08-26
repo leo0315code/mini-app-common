@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * 文章 / 内容（CMS）。后台富文本撰写，小程序端按频道拉取。
@@ -35,6 +36,7 @@ class Article extends Model
 {
     /** @use HasFactory<ArticleFactory> */
     use HasFactory;
+    use SoftDeletes;
 
     protected function casts(): array
     {
@@ -67,7 +69,8 @@ class Article extends Model
         return $query->where('status', self::STATUS_PUBLISHED)
             ->where(function ($q) {
                 $q->whereNull('published_at')->orWhere('published_at', '<=', now());
-            });
+            })
+            ->whereNull('deleted_at');
     }
 
     /**

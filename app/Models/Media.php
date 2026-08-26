@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
@@ -24,6 +25,7 @@ class Media extends Model
 {
     /** @use HasFactory<MediaFactory> */
     use HasFactory;
+    use SoftDeletes;
 
     protected function casts(): array
     {
@@ -75,6 +77,11 @@ class Media extends Model
     protected static function booted(): void
     {
         static::deleting(function (Media $media) {
+            // 软删除仅标记 deleted_at，保留磁盘文件；只有硬删除才清文件。
+            if (! $media->isForceDeleting()) {
+                return;
+            }
+
             if ($media->path && Storage::disk($media->disk)->exists($media->path)) {
                 Storage::disk($media->disk)->delete($media->path);
             }

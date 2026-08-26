@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * 公告 / 通知。后台发布，小程序端拉取已发布内容。
@@ -26,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Announcement extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
     protected function casts(): array
     {
@@ -55,6 +57,7 @@ class Announcement extends Model
         return $query->where('status', self::STATUS_PUBLISHED)
             ->where(function ($q) {
                 $q->whereNull('published_at')->orWhere('published_at', '<=', now());
-            });
+            })
+            ->whereNull('deleted_at');
     }
 }

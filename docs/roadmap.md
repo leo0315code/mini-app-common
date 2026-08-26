@@ -51,9 +51,10 @@
 
 ## P2 — 安全与运营效率
 
-### 5. 资源级权限（Policy）
+### 5. 资源级权限（Policy）✅ 已落地（v1.12.0）
 - **现状缺口**：RBAC 只控制「能否进后台」（`canAccessPanel`），进去之后任何管理员都能操作所有模块（含删除用户、改系统配置）。`app/Policies` 目录不存在。
 - **落地要点**：为每个 Resource 建 Policy，按角色 slug 控制 `viewAny/view/create/update/delete`；普通 admin 只给内容运营模块，super-admin 全量。
+- **实际落地**：`app/Policies/` 12 个 Policy（含 `BasePolicy` 统一权限判定）；`AppServiceProvider::registerPolicies` 全部注册；`AuditLog/SubscribeMessageFailure` 等受控；super-admin 经 `before()` 直通。
 
 ### 6. 后台登录安全 ✅ 已落地（v1.17.0 ~ v1.18.0）
 - **现状缺口**：后台登录无独立限流、无登录/登出审计（`AuditObserver` 只监听模型 CRUD，不含登录事件）、没有修改密码页面。
@@ -62,9 +63,10 @@
   - v1.17 审计（`AdminAuthAuditListener` → `audit_logs` 记录 Login/Logout/Failed）+ 改密码页（`EditPassword`）。
   - v1.18 登录防爆破限流：`AdminLogin` 自定义登录页在 Filament 内置 IP 级限流（每 IP 5 次/分钟）之上，叠加**账号级限流**（同邮箱+IP 1 分钟内 5 次超限拦截，失败累加、成功清除计数）。
 
-### 7. 通知 / 公告定时发布
+### 7. 通知 / 公告定时发布 ✅ 已落地（v1.13.0）
 - **现状缺口**：`published_at` 字段已存在且查询侧已兼容（`published_at <= now()`），但没有调度器自动把 `draft` 翻成 `published`，定时发布形同虚设。
 - **落地要点**：`console command` + `schedule:run`（部署文档需注明 crontab / Docker entrypoint），到点自动发布；通知也可加 `scheduled_at` 延迟派发。
+- **实际落地**：`App\Console\Commands\PublishScheduled`（翻 `draft`→`published`）+ `routes/console.php` 注册 `Schedule::command(...)->everyMinute()`；部署文档注明 `* * * * * php artisan schedule:run`。
 
 ### 8. 首页运营位（Banner）管理 ✅ 已落地（v1.17.0）
 - **现状缺口**：小程序首页轮播图/金刚位没有对应后台，目前只能改代码或塞进公告。
@@ -75,13 +77,15 @@
 
 ## P3 — 体验补齐
 
-### 9. 审计覆盖补全
+### 9. 审计覆盖补全 ✅ 已落地（v1.13.0）
 - **现状缺口**：`AuditObserver` 仅监听 `User / Announcement / Feedback / Article / Category`，**通知、媒体、角色的增删改均不落审计**（v1.6.0 新增模块即缺失）。
 - **落地要点**：Observer 补注册三个模型，`module` 分别记 `notification / media / role`。
+- **实际落地**：`AppServiceProvider` 已为 `User/Announcement/Article/Category/Feedback/Notification/Media/Role/Menu/Banner` 全部注册 `AuditObserver`（10 个模型），通知/媒体/角色审计补齐。
 
-### 10. 回收站（软删除）
+### 10. 回收站（软删除）✅ 已落地（v1.19.0）
 - **现状缺口**：全项目无任何模型使用 `SoftDeletes`，误删文章/公告/媒体记录后无法恢复（媒体只删文件不留记录）。
 - **落地要点**：`articles / announcements / media` 优先加软删 + 后台「回收站」筛选页；删除策略统一（软删记录，硬删才清文件）。
+- **实际落地**：迁移加 `deleted_at`；三模型 `use SoftDeletes`；公开接口 `scopePublished` 排除 trashed（防软删内容泄露）；`Media` 的 `deleting` 事件改为仅 `forceDelete` 清文件；Filament 三资源列表接入 `TrashedFilter` + 恢复/硬删 action（单条与批量）；`SoftDeleteTest` 覆盖。
 
 ### 11. Token 会话管理增强
 - **现状缺口**：Token 只能逐个或批量撤销，看不到设备信息；没有「按用户一键下线全部设备」。
@@ -121,9 +125,9 @@
 | 阶段 | 内容 | 版本 |
 | --- | --- | --- |
 | 近期 | P1 全部（订阅消息、封禁、仪表盘、导出） | v1.9.0 ~ v1.16.0 |
-| 中期 | P2 权限（v1.12）、登录安全审计+改密码（v1.17）、定时发布（v1.13 调度器）、Banner（v1.17）；限流待补 | v1.12.0 ~ v1.17.0 |
-| 空闲穿插 | P3 体验项（用户详情聚合页 v1.13、富文本插图 v1.13） | v1.13.0 patch |
-| 远期 | P4 架构演进 | v3.0（破坏性） |
+| 中期 | P2 权限（v1.12）、登录安全审计+改密码（v1.17）、登录限流（v1.18）、定时发布（v1.13 调度器）、Banner（v1.17） | v1.12.0 ~ v1.18.0 |
+| 空闲穿插 | P3 体验项（用户详情聚合页 v1.13、富文本插图 v1.13、审计覆盖补全 v1.13、软删除回收站 v1.19） | v1.13.0 ~ v1.19.0 |
+| 远期 | P4 架构演进（多租户 v2.0、消息渠道抽象、备份、工程化门禁） | v3.0（破坏性） |
 
 ---
 

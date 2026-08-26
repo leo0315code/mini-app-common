@@ -4,6 +4,20 @@
 
 ---
 
+## [v1.19.0] - 2026-08-26
+
+内容模型软删除回收站（P3-10）：
+
+- 迁移 `2026_08_26_001000_add_soft_deletes_to_content_tables`：为 `articles` / `announcements` / `media` 三表增加 `deleted_at`。
+- 三个模型 `use SoftDeletes`：`Article` / `Announcement` / `Media`。
+- 公开查询安全：文章与公告的 `scopePublished()` 显式 `whereNull('deleted_at')`，软删内容不会被小程序公开接口返回（修复潜在回归）。
+- `Media` 模型修复 `deleting` 事件：仅**硬删除**（`isForceDeleting()`）才清理磁盘文件，软删保留文件；与回收站语义一致。
+- Filament 后台回收站：三个 Resource 的列表加入 `TrashedFilter`（回收站筛选）+ `RestoreAction` / `ForceDeleteAction`（行内恢复 / 硬删）+ `RestoreBulkAction` / `ForceDeleteBulkAction`（批量）。默认列表排除回收站。
+- 测试 `SoftDeleteTest`（6 例）：软删后公开 API 排除、详情 404、`restore()` 恢复、`forceDelete()` 清记录、`Media` 软删留文件 / 硬删清文件、`onlyTrashed` 语义。
+- **测试**：全量 **129 passed (350 assertions)**（本地 PHP 8.3.30 + SQLite）。
+
+---
+
 ## [v1.18.0] - 2026-08-26
 
 后台登录防爆破限流（P2-6 收尾）：
