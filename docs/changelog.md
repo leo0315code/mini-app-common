@@ -4,6 +4,65 @@
 
 ---
 
+## [v1.17.0] - 2026-08-26
+
+Banner 运营位 + 后台登录安全 + 事件发现修复：
+
+- **P2-8 Banner 运营位管理**：
+  - `banners` 表迁移（image / link_type / article_id / url / starts_at / ends_at / is_active / sort_order）
+  - `Banner` 模型 `scopeActive`（未激活或时间窗外自动过滤）+ `imageUrl()` 辅助
+  - `BannerPolicy` + `AppServiceProvider` 注册 + `AuditObserver` 接入审计
+  - `BannerResource`（List / Create / Edit）+ 菜单种子（运营 → Banner）
+  - 公开接口 `GET /api/banners`（按 `sort_order` 返回生效 Banner，区分文章跳转 / 外链）
+  - `BannerFactory` + `BannerTest`（公开接口、RBAC 权限、激活时间窗过滤）
+- **P2-6 后台登录安全**：
+  - `AdminAuthAuditListener` 监听 `Login` / `Logout` / `Failed` 写入 `audit_logs`
+  - `EditPassword` 后台改密码页（校验原密码，Filament Page + Livewire 表单）
+  - `AdminAuthSecurityTest`（审计落库、改密码成功、拒绝错误原密码）
+- **Bug 修复**：
+  - `EditPassword::$navigationIcon` 类型须为 `BackedEnum|string|null`（与 `Filament\Pages\Page` 基类一致，否则类加载 FatalError）
+  - 新增 `App\Providers\EventServiceProvider` 关闭事件自动发现（Laravel 默认开启 discover，`app/Listeners` 扫描时 `glob` 收到数组路径抛 `TypeError`），监听改由 `listens()` 显式登记；`bootstrap/app.php` 移除 `withEvents`
+- **测试**：全量 **120 passed (320 assertions)**（本地 PHP 8.3.30 + SQLite）
+
+---
+
+## [v1.16.0] - 2026-08-22
+
+订阅消息推送失败治理（roadmap P2，续）：
+
+- `SubscribeMessageFailureResource`：推送失败记录后台列表，支持按状态 / 原因 / 时间筛选、单条 / 批量重发。
+- 失败记录与原始订阅任务关联，重发复用原模板与接收人，重发后回写状态。
+
+---
+
+## [v1.15.0] - 2026-08-22
+
+订阅消息推送改为队列异步：
+
+- 订阅消息推送任务移入队列（`QUEUE_CONNECTION` 驱动），支持失败自动重试。
+- 推送链路与重试策略解耦，避免同步推送阻塞请求。
+
+---
+
+## [v1.14.0] - 2026-08-22
+
+微信订阅消息推送功能：
+
+- `feat(wechat)` 新增微信订阅消息推送能力，模板消息可下发到小程序用户。
+- 对接微信订阅消息接口，配置化模板 ID 与场景。
+
+---
+
+## [v1.13.0] - 2026-08-22
+
+用户详情聚合页 + CSV 批量导出 + 富文本插图入库：
+
+- **P2-3 批量导出**：`App\Support\ExportsCsv` Trait（零依赖、不落盘），用户 / 反馈 / 通知列表接入「导出全量 / 导出所选」，输出 UTF-8 BOM 兼容 Excel/WPS。
+- **P3-1 用户详情聚合页**：`UserResource` 新增 ViewUser infolist 页，Split 布局展示基本信息 / 微信身份 / 安全状态，四个 Tab 聚合反馈 / 通知 / Token / 审计，Header 支持编辑 / 封禁 / 解封 / 删除。
+- **P3-4 富文本插图入库**：`App\Support\ManagesRichEditorAttachments` Trait，RichEditor 附件存 `public/rich-editor/{YYYYMM}` 并写 `Media` 表（collection=rich-editor），文章 / 公告编辑器接入。
+
+---
+
 ## [v1.12.0] - 2026-08-22
 
 RBAC 权限系统完善 + 技术债清理：

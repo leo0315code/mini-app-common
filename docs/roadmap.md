@@ -25,13 +25,14 @@
 
 ## P1 — 核心缺口，建议近期落地
 
-### 1. 微信订阅消息推送
+### 1. 微信订阅消息推送 ✅ 已落地（v1.14.0 ~ v1.16.0）
 - **现状缺口**：通知触达只有站内信（用户打开小程序才能看到），没有任何离线触达渠道。这是「小程序通用后台」最核心的缺失能力。
 - **落地要点**：
   - 新增 `message_templates` 表（模板 ID、标题、字段定义）+ 后台模板管理。
   - 发送记录表（发送目标、状态、微信返回的错误码）。
   - 与现有 `Notification` 联动：派发通知时可选同步下发订阅消息（`subscribeMessage.send`）。
   - 需 `access_token` 的获取与缓存（`stable_token`，缓存到 `Setting` 或 Cache）。
+  - **实际落地**：v1.14 接入微信订阅消息接口；v1.15 推送改队列异步 + 重试；v1.16 失败记录后台 `SubscribeMessageFailureResource`（筛选 / 单发 / 批量重发）。
 
 ### 2. 用户封禁 / 禁用 ✅ 已落地（v1.9.0）
 - `users.status`（normal/banned）+ `banned_at` / `ban_reason`；`User::ban()/unban()` 自动吊销全部 Token。
@@ -41,9 +42,10 @@
 ### 3. 仪表盘运营维度扩展 ✅ 已落地（v1.10.0）
 - 工作台新增 `OpexStatsWidget`（待处理反馈数、通知已读率、内容总量、媒体占用、今日 API 调用、封禁用户数）+ `PendingFeedbackTable`（待处理反馈直达处理），统计口径已在 Docker 真实 MySQL 校验。
 
-### 4. 数据导出（Excel/CSV）
+### 4. 数据导出（Excel/CSV）✅ 已落地（v1.13.0）
 - **现状缺口**：所有列表均无导出，用户名单、反馈明细只能截图。
 - **落地要点**：Filament Export（用户、反馈、通知回执优先），走队列异步生成 + 后台下载，避免大数据集超时。
+- **实际落地**：`App\Support\ExportsCsv` Trait（零依赖、不落盘），用户 / 反馈 / 通知列表接入「导出全量 / 导出所选」，UTF-8 BOM 兼容 Excel/WPS。
 
 ---
 
@@ -53,17 +55,19 @@
 - **现状缺口**：RBAC 只控制「能否进后台」（`canAccessPanel`），进去之后任何管理员都能操作所有模块（含删除用户、改系统配置）。`app/Policies` 目录不存在。
 - **落地要点**：为每个 Resource 建 Policy，按角色 slug 控制 `viewAny/view/create/update/delete`；普通 admin 只给内容运营模块，super-admin 全量。
 
-### 6. 后台登录安全
+### 6. 后台登录安全 ✅ 已部分落地（v1.17.0）
 - **现状缺口**：后台登录无独立限流、无登录/登出审计（`AuditObserver` 只监听模型 CRUD，不含登录事件）、没有修改密码页面。
 - **落地要点**：登录失败限流（`RateLimiter`）；登录成功/失败写 `audit_logs`；后台个人资料页支持改密码。
+- **实际落地**：v1.17 已补登录/登出/失败审计（`AdminAuthAuditListener` → `audit_logs`）+ 改密码页（`EditPassword`）。**登录失败限流（RateLimiter）仍待补**。
 
 ### 7. 通知 / 公告定时发布
 - **现状缺口**：`published_at` 字段已存在且查询侧已兼容（`published_at <= now()`），但没有调度器自动把 `draft` 翻成 `published`，定时发布形同虚设。
 - **落地要点**：`console command` + `schedule:run`（部署文档需注明 crontab / Docker entrypoint），到点自动发布；通知也可加 `scheduled_at` 延迟派发。
 
-### 8. 首页运营位（Banner）管理
+### 8. 首页运营位（Banner）管理 ✅ 已落地（v1.17.0）
 - **现状缺口**：小程序首页轮播图/金刚位没有对应后台，目前只能改代码或塞进公告。
 - **落地要点**：`banners` 表（图片、跳转链接/文章关联、排序、生效时间）+ 后台管理 + `GET /api/banners` 公开接口。
+- **实际落地**：`Banner` 模型 `scopeActive`（时间窗过滤）+ `BannerResource`（List/Create/Edit）+ 菜单 + 公开接口按 `sort_order` 返回生效 Banner，`BannerTest` 覆盖。
 
 ---
 
@@ -81,13 +85,15 @@
 - **现状缺口**：Token 只能逐个或批量撤销，看不到设备信息；没有「按用户一键下线全部设备」。
 - **落地要点**：签发时记录设备名/UA 摘要；用户详情页聚合展示其 Token 并支持一键踢下线。
 
-### 12. 用户详情聚合页
+### 12. 用户详情聚合页 ✅ 已落地（v1.13.0）
 - **现状缺口**：用户只有编辑表单，看不到该用户的通知已读情况、反馈历史、审计轨迹、Token 列表，排查问题要开四个页面分别搜。
 - **落地要点**：`ViewUser` 页（RelationManager 或 infolist）聚合以上四类关联数据。
+- **实际落地**：`UserResource` 新增 `ViewUser` infolist 页，Split 布局 + 四 Tab（反馈/通知/Token/审计），Header 支持编辑/封禁/解封/删除。
 
-### 13. 富文本编辑器图片入媒体库
+### 13. 富文本编辑器图片入媒体库 ✅ 已落地（v1.13.0）
 - **现状缺口**：文章/公告 RichEditor 插入的图片走 Filament 默认上传路径，**不进 `media` 表**，媒体库看不到也无法统一管理/清理。
 - **落地要点**：编辑器 `fileAttachmentsDirectory` + 上传钩子写入 `media` 表（collection 设为 `rich-editor`）。
+- **实际落地**：`App\Support\ManagesRichEditorAttachments` Trait 入库 `Media`（`collection=rich-editor`），文章/公告编辑器接入。
 
 ---
 
@@ -112,9 +118,9 @@
 
 | 阶段 | 内容 | 版本 |
 | --- | --- | --- |
-| 近期 | P1 全部（订阅消息、封禁、仪表盘、导出） | v1.9.0 ~ v2.0.0 |
-| 中期 | P2（权限、登录安全、定时发布、Banner） | v2.x |
-| 空闲穿插 | P3 体验项（每项独立小版本） | v2.x patch |
+| 近期 | P1 全部（订阅消息、封禁、仪表盘、导出） | v1.9.0 ~ v1.16.0 |
+| 中期 | P2 权限（v1.12）、登录安全审计+改密码（v1.17）、定时发布（v1.13 调度器）、Banner（v1.17）；限流待补 | v1.12.0 ~ v1.17.0 |
+| 空闲穿插 | P3 体验项（用户详情聚合页 v1.13、富文本插图 v1.13） | v1.13.0 patch |
 | 远期 | P4 架构演进 | v3.0（破坏性） |
 
 ---
