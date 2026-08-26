@@ -51,8 +51,8 @@ class UserRegistrationChart extends ChartWidget
                 [
                     'label' => '新增用户',
                     'data' => $dates->map(fn ($day) => $counts->get($day, 0))->toArray(),
-                    'borderColor' => '#f59e0b',
-                    'backgroundColor' => 'rgba(245, 158, 11, 0.1)',
+                    'borderColor' => '#0D9488',
+                    'backgroundColor' => 'rgba(14, 165, 233, 0.12)',
                     'fill' => true,
                     'tension' => 0.4,
                 ],

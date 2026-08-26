@@ -152,7 +152,34 @@
     @apply text-sm;
 }
 
-/* ---------- 弹窗 ---------- */
+/* ---------- 空状态图标（高频元素，品牌化） ---------- */
+.fi-ta-empty-state-icon-bg {
+    @apply bg-gradient-to-br from-brand-500 to-accent-500 ring-1 ring-brand-500/20;
+
+    & .fi-icon {
+        @apply text-white;
+    }
+}
+
+/* ---------- 图表 Widget（仪表盘） ---------- */
+/* 图表卡片顶部渐变条，与统计卡片/弹窗/登录卡片同源点缀语言 */
+.fi-wi-chart {
+    @apply overflow-hidden ring-1 ring-gray-950/5 dark:ring-white/10;
+
+    &::before {
+        content: '';
+        @apply block h-1 w-full bg-gradient-to-r from-brand-500 to-accent-500;
+    }
+}
+
+.fi-wi-chart-header .fi-wi-chart-header-heading {
+    @apply relative pl-3;
+
+    &::before {
+        content: '';
+        @apply absolute left-0 top-1/2 h-[1.1em] w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-brand-500 to-accent-500;
+    }
+}
 /* 弹窗窗口顶部渐变条，与登录卡片/统计卡片的点缀语言呼应 */
 .fi-modal-window {
     @apply overflow-hidden;
@@ -178,6 +205,16 @@
 /* 通知列表：未发布（用户端不可见）行淡化 */
 .fi-ta-row-unpublished > td {
     opacity: 0.55;
+}
+
+/* ---------- 分页器当前页高亮（交互焦点） ---------- */
+.fi-pagination-item.fi-active > .fi-pagination-item-btn {
+    @apply bg-gradient-to-r from-brand-500 to-accent-500 text-white shadow-md shadow-brand-500/20;
+
+    & .fi-pagination-item-icon,
+    & .fi-pagination-item-label {
+        @apply text-white;
+    }
 }
 
 /* 用户列表：已封禁行整行淡红高亮，一眼可辨 */
