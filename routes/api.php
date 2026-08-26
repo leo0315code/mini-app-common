@@ -3,6 +3,7 @@
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BannerController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NotificationController;
@@ -20,10 +21,11 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// 公开接口：微信登录、已发布公告
+// 公开接口：微信登录、已发布公告、首页运营位
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::get('/announcements', [AnnouncementController::class, 'index']);
 Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
+Route::get('/banners', [BannerController::class, 'index']);
 
 // 公开接口：内容中心 CMS
 Route::get('/article-categories', [ArticleController::class, 'categories']);

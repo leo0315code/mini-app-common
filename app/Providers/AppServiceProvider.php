@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Announcement;
 use App\Models\Article;
 use App\Models\AuditLog;
+use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Feedback;
 use App\Models\Media;
@@ -16,6 +17,7 @@ use App\Models\User;
 use App\Policies\AnnouncementPolicy;
 use App\Policies\ArticlePolicy;
 use App\Policies\AuditLogPolicy;
+use App\Policies\BannerPolicy;
 use App\Policies\CategoryPolicy;
 use App\Policies\FeedbackPolicy;
 use App\Policies\MenuPolicy;
@@ -54,6 +56,7 @@ class AppServiceProvider extends ServiceProvider
         Media::observe(AuditObserver::class);
         Role::observe(AuditObserver::class);
         Menu::observe(AuditObserver::class);
+        Banner::observe(AuditObserver::class);
 
         Role::observe(PermissionCacheObserver::class);
         Menu::observe(PermissionCacheObserver::class);
@@ -75,5 +78,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Media::class, MediaPolicy::class);
         Gate::policy(Notification::class, NotificationPolicy::class);
         Gate::policy(SubscribeMessageFailure::class, SubscribeMessageFailurePolicy::class);
+        Gate::policy(Banner::class, BannerPolicy::class);
     }
 }

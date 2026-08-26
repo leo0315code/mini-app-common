@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Announcement;
 use App\Models\Article;
 use App\Models\AuditLog;
+use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Feedback;
 use App\Models\Media;
@@ -50,6 +51,7 @@ class AuditObserver
             User::class => 'user',
             Role::class => 'role',
             Menu::class => 'menu',
+            Banner::class => 'banner',
             default => 'system',
         };
     }
@@ -64,7 +66,8 @@ class AuditObserver
             || $model instanceof Media
             || $model instanceof User
             || $model instanceof Role
-            || $model instanceof Menu;
+            || $model instanceof Menu
+            || $model instanceof Banner;
     }
 
     public function created($model): void

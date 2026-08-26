@@ -83,6 +83,8 @@ class MenusTableSeeder extends Seeder
         Menu::create(['parent_id' => $system->id, 'name' => '推送失败记录', 'slug' => 'system.subscribe-failure', 'route' => 'filament.resources.subscribe-message-failures.index', 'permission' => 'subscribe_message_failure.view', 'sort_order' => 3, 'is_visible' => true, 'is_active' => true]);
         Menu::create(['parent_id' => $system->id, 'name' => '推送失败记录管理', 'slug' => 'subscribe_message_failure.manage', 'permission' => 'subscribe_message_failure.manage', 'sort_order' => 4, 'is_visible' => false, 'is_active' => true]);
 
+        Menu::create(['name' => '运营位管理', 'slug' => 'banner', 'icon' => 'heroicon-o-photo', 'route' => 'filament.resources.banners.index', 'permission' => 'banner.view', 'sort_order' => 12, 'is_visible' => true, 'is_active' => true]);
+        Menu::create(['name' => '运营位管理权限', 'slug' => 'banner.manage', 'permission' => 'banner.manage', 'sort_order' => 13, 'is_visible' => false, 'is_active' => true]);
         Menu::create(['name' => '反馈管理', 'slug' => 'feedback', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'filament.resources.feedback.index', 'permission' => 'feedback.view', 'sort_order' => 30, 'is_visible' => true, 'is_active' => true]);
         Menu::create(['name' => '反馈管理权限', 'slug' => 'feedback.manage', 'permission' => 'feedback.manage', 'sort_order' => 31, 'is_visible' => false, 'is_active' => true]);
         Menu::create(['name' => '公告管理', 'slug' => 'announcement', 'icon' => 'heroicon-o-megaphone', 'route' => 'filament.resources.announcements.index', 'permission' => 'announcement.view', 'sort_order' => 40, 'is_visible' => true, 'is_active' => true]);
