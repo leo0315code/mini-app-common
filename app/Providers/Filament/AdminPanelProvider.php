@@ -9,6 +9,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use App\Filament\Pages\AdminLogin;
+use App\Http\Middleware\InjectAdminStyles;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -32,12 +33,13 @@ class AdminPanelProvider extends PanelProvider
             ->darkModeBrandLogo(asset('logo-dark.svg'))
             ->brandLogoHeight('2rem')
             ->favicon(asset('favicon.svg'))
+            ->darkMode(false)
             ->colors([
                 'primary' => Color::hex('#0D9488'),
                 'gray' => Color::hex('#475569'),
             ])
             ->font('Instrument Sans')
-            ->maxContentWidth(\Filament\Support\Enums\Width::ScreenLarge)
+            ->maxContentWidth(\Filament\Support\Enums\Width::Full)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([])
@@ -53,6 +55,8 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                InjectAdminStyles::class,
+                \App\Http\Middleware\NoCacheHeaders::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

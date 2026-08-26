@@ -3,6 +3,8 @@
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
 
+/* v4 - 紧凑化 */
+
 /* ============================================================
    宏图爱 后台设计系统 — 主题层
    品牌：teal(#0D9488) → sky(#0EA5E9) 渐变体系
@@ -13,6 +15,37 @@
     --color-brand-600: #0c7d73;
     --color-accent-400: #38bdf8;
     --color-accent-500: #0ea5e9;
+}
+
+/* 强制亮色模式：阻止系统暗色偏好自动触发 dark: 变体 */
+@layer base {
+    html,
+    .fi-body,
+    .fi-simple-main-ctn {
+        color-scheme: light !important;
+    }
+}
+
+/* 覆盖所有可能的暗色模式变体 */
+@media (prefers-color-scheme: dark) {
+    html.fi,
+    .fi-body {
+        background-color: rgb(249 250 251) !important;
+        color: rgb(2 6 23) !important;
+    }
+
+    .fi-sidebar {
+        background-color: #ffffff !important;
+    }
+
+    .fi-topbar {
+        background-color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .fi-ta-header-cell {
+        background-color: rgb(249 250 251) !important;
+        color: rgb(75 85 99) !important;
+    }
 }
 
 /* ---------- 登录 / 认证页 ---------- */
@@ -58,6 +91,10 @@
 }
 
 /* ---------- 侧边栏 ---------- */
+.fi-sidebar {
+    @apply bg-white border-r border-gray-200;
+}
+
 .fi-sidebar-header-ctn {
     @apply bg-gradient-to-b from-brand-500 to-accent-500;
 }
@@ -89,6 +126,51 @@
 
 .fi-sidebar-group-label {
     @apply text-xs font-semibold uppercase tracking-wider text-gray-400;
+}
+
+/* 侧边栏导航滚动条美化 */
+.fi-sidebar-nav {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 3px;
+
+        &:hover {
+            background-color: #94a3b8;
+        }
+    }
+}
+
+.fi-sidebar-item-btn:hover {
+    @apply bg-brand-500/5;
+}
+
+.fi-sidebar-item-btn:not(.fi-active) {
+    & > .fi-icon {
+        @apply text-gray-400;
+    }
+
+    &:hover > .fi-icon {
+        @apply text-brand-500;
+    }
+
+    &:hover > .fi-sidebar-item-label {
+        @apply text-brand-600;
+    }
+}
+
+.fi-sidebar-item-label {
+    @apply text-gray-700;
 }
 
 /* ---------- 统计卡片（工作台） ---------- */
@@ -141,15 +223,19 @@
 
 /* ---------- 表格 ---------- */
 .fi-ta-table {
-    @apply overflow-hidden rounded-xl ring-1 ring-gray-950/5 dark:ring-white/10;
+    @apply overflow-hidden rounded-xl ring-1 ring-gray-950/5;
 }
 
 .fi-ta-row {
-    @apply transition duration-75 hover:bg-brand-500/5 dark:hover:bg-white/5;
+    @apply transition duration-75 hover:bg-brand-500/5;
 }
 
 .fi-ta-header-cell {
-    @apply bg-gray-50/80 font-semibold text-gray-600 dark:bg-white/5 dark:text-gray-300;
+    @apply bg-gray-50 font-semibold text-gray-600;
+}
+
+.fi-ta-header-cell > .fi-ta-header-cell-content {
+    @apply py-3;
 }
 
 /* 列表工具条（搜索/筛选/列管理所在行）极淡品牌渐变薄洗，融入品牌体系又不过度 */
@@ -359,4 +445,95 @@
 /* 用户列表：已封禁行整行淡红高亮，一眼可辨 */
 .fi-ta-row-banned > td {
     background-color: rgb(254 226 226 / 0.55);
+}
+
+/* ---------- 全局紧凑化：减少所有间距 ---------- */
+.fi-main {
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+}
+
+.fi-header {
+    gap: 0.375rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.fi-header .fi-breadcrumbs {
+    margin-bottom: 0.125rem !important;
+}
+
+.fi-header-heading {
+    margin-bottom: 0 !important;
+}
+
+.fi-header-subheading {
+    margin-top: 0.125rem !important;
+    margin-bottom: 0.125rem !important;
+}
+
+.fi-header-has-breadcrumbs .fi-header-actions-ctn {
+    margin-top: 0.125rem !important;
+}
+
+.fi-wi-stats-overview {
+    margin-top: 0.25rem !important;
+    gap: 0.5rem !important;
+}
+
+.fi-widget {
+    margin-bottom: 0.5rem !important;
+}
+
+.fi-wi-chart {
+    margin-top: 0.25rem !important;
+}
+
+.fi-ta-ctn {
+    margin-top: 0 !important;
+}
+
+.fi-ta-header-ctn {
+    margin-top: 0 !important;
+    margin-bottom: 0.25rem !important;
+}
+
+.fi-ta-header-toolbar {
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+}
+
+.fi-ta-table {
+    margin-top: 0 !important;
+}
+
+.fi-ta-filters {
+    margin-bottom: 0.25rem !important;
+}
+
+.fi-section {
+    margin-bottom: 0.5rem !important;
+}
+
+.fi-body {
+    gap: 0.25rem !important;
+}
+
+/* 表格紧凑化：覆盖 --spacing 变量
+   所有列组件的 padding-block 都用 calc(var(--spacing)*4)
+   将 --spacing 从默认 0.25rem 改为 0.09375rem
+   → calc(0.09375rem * 4) = 0.375rem ≈ 6px 行高压缩 60% */
+.fi-ta-table {
+    --spacing: 0.09375rem;
+}
+
+/* 覆盖头像/图标尺寸 */
+.fi-ta-color > .fi-ta-color-item {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+}
+
+/* 表格工具栏紧凑 */
+.fi-ta-header-toolbar-ctn {
+    padding: 0.25rem 0.5rem !important;
+    gap: 0.5rem !important;
 }
