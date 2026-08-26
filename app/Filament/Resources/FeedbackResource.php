@@ -174,6 +174,10 @@ class FeedbackResource extends Resource
                         Feedback::STATUS_RESOLVED => '已解决',
                         Feedback::STATUS_REJECTED => '已驳回',
                     ]),
+                SelectFilter::make('user')
+                    ->label('用户')
+                    ->options(User::pluck('nickname', 'id')->filter()->toArray())
+                    ->query(fn (Builder $query, array $data) => $query->when($data['value'], fn ($q, $v) => $q->where('user_id', $v))),
             ])
             ->filtersFormColumns(2)
             ->recordActions([

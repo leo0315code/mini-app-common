@@ -186,6 +186,10 @@ class NotificationResource extends Resource
                 TernaryFilter::make('published')
                     ->label('已发布')
                     ->nullable(),
+                SelectFilter::make('user')
+                    ->label('接收用户')
+                    ->options(User::pluck('nickname', 'id')->filter()->toArray())
+                    ->query(fn (Builder $query, array $data) => $query->when($data['value'], fn ($q, $v) => $q->whereHas('recipients', fn (Builder $q) => $q->where('user_id', $v)))),
             ])
             ->recordActions([
                 EditAction::make(),
