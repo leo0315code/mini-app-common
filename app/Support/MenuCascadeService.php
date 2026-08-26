@@ -8,11 +8,11 @@ use Illuminate\Support\Facades\Schema;
 
 class MenuCascadeService
 {
-    protected string $cacheTag = 'menu_cascade';
-
-    protected string $childrenMapCacheKey = 'menu_cascade_children';
-
-    protected string $menuOptionsCacheKey = 'menu_cascade_options';
+    /**
+     * 缓存版本键：清除缓存时递增版本号，旧键随 TTL 自然过期。
+     * 不使用 Cache::tags()——Redis 等驱动不支持标签，会抛 BadMethodCallException。
+     */
+    protected string $versionKey = 'menu_cascade_version';
 
     protected int $cacheTtl = 3600;
 
@@ -23,6 +23,21 @@ class MenuCascadeService
     public function __construct()
     {
         $this->loadFromCache();
+    }
+
+    protected function currentVersion(): int
+    {
+        return (int) Cache::get($this->versionKey, 0);
+    }
+
+    protected function childrenMapCacheKey(): string
+    {
+        return 'menu_cascade_children_v'.$this->currentVersion();
+    }
+
+    protected function menuOptionsCacheKey(): string
+    {
+        return 'menu_cascade_options_v'.$this->currentVersion();
     }
 
     protected function loadFromCache(): void
@@ -37,8 +52,8 @@ class MenuCascadeService
             return;
         }
 
-        $this->childrenMap = Cache::tags($this->cacheTag)->remember(
-            $this->childrenMapCacheKey,
+        $this->childrenMap = Cache::remember(
+            $this->childrenMapCacheKey(),
             $this->cacheTtl,
             function () {
                 $map = [];
@@ -119,8 +134,8 @@ class MenuCascadeService
             return [];
         }
 
-        return Cache::tags($this->cacheTag)->remember(
-            $this->menuOptionsCacheKey,
+        return Cache::remember(
+            $this->menuOptionsCacheKey(),
             $this->cacheTtl,
             function () {
                 $menus = Menu::query()->active()->orderBy('sort_order')->get();
@@ -155,6 +170,8 @@ class MenuCascadeService
 
     public function clearCache(): void
     {
-        Cache::tags($this->cacheTag)->flush();
+        // 递增版本号使旧键失效（旧键随 TTL 自然过期），兼容不支持标签的缓存驱动
+        Cache::forever($this->versionKey, $this->currentVersion() + 1);
+        $this->loaded = false;
     }
 }

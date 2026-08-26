@@ -11,9 +11,13 @@ class MenuPermissionManager
 {
     protected string $cachePrefix = 'user_permissions_';
 
-    protected string $cacheTag = 'user_permissions';
-
-    protected string $cascadeCacheTag = 'menu_cascade';
+    /**
+     * 缓存版本键：清除全部用户权限缓存时递增版本号，
+     * 旧键随 TTL 自然过期。避免使用 Cache::tags()——
+     * Laravel 10+ 的 Redis/Database 缓存驱动不再支持标签，线上会直接抛
+     * BadMethodCallException（this cache store does not support tagging）。
+     */
+    protected string $versionKey = 'user_permissions_version';
 
     protected int $cacheTtl = 3600;
 
@@ -35,8 +39,8 @@ class MenuPermissionManager
             return ['*'];
         }
 
-        return Cache::tags($this->cacheTag)->remember(
-            $this->cachePrefix.$user->id,
+        return Cache::remember(
+            $this->userCacheKey($user->id),
             $this->cacheTtl,
             function () use ($user) {
                 return $user->roles()
@@ -103,8 +107,8 @@ class MenuPermissionManager
             return ['*'];
         }
 
-        return Cache::tags($this->cacheTag)->remember(
-            $this->cachePrefix.'slugs_'.$user->id,
+        return Cache::remember(
+            $this->userCacheKey('slugs_'.$user->id),
             $this->cacheTtl,
             function () use ($user) {
                 return $user->roles()
@@ -133,14 +137,25 @@ class MenuPermissionManager
 
     public function clearUserCache(User $user): void
     {
-        Cache::forget($this->cachePrefix.$user->id);
-        Cache::forget($this->cachePrefix.'slugs_'.$user->id);
+        Cache::forget($this->userCacheKey($user->id));
+        Cache::forget($this->userCacheKey('slugs_'.$user->id));
     }
 
     public function clearAllCache(): void
     {
-        Cache::tags($this->cacheTag)->flush();
-        Cache::tags($this->cascadeCacheTag)->flush();
+        // 递增版本号使全部旧键失效（旧键随 TTL 自然过期），兼容不支持标签的缓存驱动
+        Cache::forever($this->versionKey, $this->currentVersion() + 1);
+        app(MenuCascadeService::class)->clearCache();
+    }
+
+    protected function userCacheKey(string $suffix): string
+    {
+        return $this->cachePrefix.$this->currentVersion().'_'.$suffix;
+    }
+
+    protected function currentVersion(): int
+    {
+        return (int) Cache::get($this->versionKey, 0);
     }
 
     protected function tablesReady(): bool
