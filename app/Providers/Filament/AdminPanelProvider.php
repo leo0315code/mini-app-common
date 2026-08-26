@@ -39,7 +39,17 @@ class AdminPanelProvider extends PanelProvider
                 'gray' => Color::hex('#475569'),
             ])
             ->font('Instrument Sans')
+            ->userMenuItems([
+                \Filament\Navigation\MenuItem::make()
+                    ->label('修改密码')
+                    ->url(fn (): string => \App\Filament\Pages\EditPassword::getUrl())
+                    ->icon('heroicon-o-key'),
+            ])
             ->maxContentWidth(\Filament\Support\Enums\Width::Full)
+            ->navigationGroups([
+                '内容运营',
+                '系统管理',
+            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([])

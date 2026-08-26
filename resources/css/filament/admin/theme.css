@@ -124,6 +124,11 @@
     }
 }
 
+/* 菜单项统一圆角 + 紧凑填充：hover/聚焦圆角与活跃胶囊一致，消除默认方形 hover 的割裂感 */
+.fi-sidebar-item-btn {
+    @apply rounded-lg px-3 py-2 transition duration-150;
+}
+
 .fi-sidebar-group-label {
     @apply text-xs font-semibold uppercase tracking-wider text-gray-400;
 }

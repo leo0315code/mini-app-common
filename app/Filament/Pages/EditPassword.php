@@ -22,7 +22,8 @@ class EditPassword extends Page implements HasForms
 
     protected static ?string $title = '修改密码';
 
-    protected static ?int $navigationSort = 99;
+    // 不挂在左侧业务导航，改为右上角用户菜单入口
+    protected static bool $shouldRegisterNavigation = false;
 
     public ?string $current_password = '';
 
