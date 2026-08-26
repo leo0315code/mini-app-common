@@ -261,18 +261,45 @@
     @apply py-3;
 }
 
-/* 表头吸顶 sticky：长列表滚动时列标题固定可见（原生 thead，整页滚动生效） */
+/* 表头吸顶 sticky：
+   问题——Filament 的表格外层 .fi-ta-content-ctn 带了 overflow-x-auto，
+   按 CSS 规范会把 overflow-y 计算为 auto，使其成为滚动容器，从而阻断
+   thead 的「页面级」sticky（head 会随整页一起滚走）。
+   解法——把该容器本身设为内部滚动容器（max-height 仅封顶、不撑高，
+   短列表无感），thead 在容器内吸顶；同时保留横向滚动，长列表体验一致。 */
+.fi-ta-content-ctn:has(> .fi-ta-table) {
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
 .fi-ta-table thead {
     @apply sticky top-0 z-[2];
 }
 
 .fi-ta-table thead .fi-ta-header-cell {
-    @apply bg-gray-50;
+    @apply bg-gray-50 dark:bg-white/5;
 
     /* 吸顶后必须不透明，否则下方行内容会透出 */
     & > .fi-ta-header-cell-content {
-        @apply bg-gray-50;
+        @apply bg-gray-50 dark:bg-white/5;
     }
+}
+
+/* 单元格可读性：容器已支持横向滚动，普通文本单元格改为「可收缩+换行」，
+   避免超长无空格内容把表格整体撑宽、迫使横向滚动；纵向滚动容器内对齐一致 */
+.fi-ta-cell {
+    @apply min-w-0;
+
+    & .fi-ta-text {
+        @apply min-w-0;
+    }
+}
+
+/* 操作列/缩略图等窄列保留自身宽度，不跟随收缩 */
+.fi-ta-cell:has(.fi-ta-actions),
+.fi-ta-cell:has(.fi-ta-record-checkbox),
+.fi-ta-cell:has(.fi-ta-reorder-handle) {
+    @apply shrink-0;
 }
 
 /* 列表工具条（搜索/筛选/列管理所在行）极淡品牌渐变薄洗，融入品牌体系又不过度 */
