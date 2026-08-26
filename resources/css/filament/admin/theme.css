@@ -110,6 +110,11 @@
     @apply pointer-events-none absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-brand-500 to-accent-500;
 }
 
+/* 统计卡片大数值：品牌渐变文字，工作台第一眼抓住品牌色 */
+.fi-wi-stats-overview-stat-value {
+    @apply bg-gradient-to-r from-brand-500 to-accent-500 bg-clip-text text-transparent;
+}
+
 /* ---------- 区块标题（Section） ---------- */
 .fi-section:not(.fi-section-not-contained) > .fi-section-header {
     @apply border-b border-gray-100 dark:border-white/5;
@@ -152,6 +157,20 @@
     @apply bg-gradient-to-r from-brand-500/[0.04] to-accent-500/[0.04];
 }
 
+/* ---------- 可排序列头 hover（未排序态） ---------- */
+/* 鼠标悬停/聚焦可排序列头时，整格上品牌色（图标+文字），与列表行/Tab hover 同源；
+   已排序态由 Filament 保持灰黑高对比（.fi-ta-header-cell-sorted）不作处理 */
+.fi-ta-header-cell:not(.fi-ta-header-cell-sorted) {
+    & .fi-ta-header-cell-sort-btn:hover,
+    & .fi-ta-header-cell-sort-btn:focus-visible {
+        @apply text-brand-600 dark:text-white/90;
+
+        & .fi-icon {
+            @apply text-brand-600 dark:text-white/90;
+        }
+    }
+}
+
 /* 已激活的筛选触发按钮：品牌淡底 + 品牌字，呼应激活态语义 */
 .fi-ta-filters-trigger-action-ctn .fi-btn.fi-color.fi-color-gray:not(.fi-outlined),
 .fi-ta-filters-trigger-action-ctn .fi-btn.fi-active:not(.fi-outlined) {
@@ -165,6 +184,11 @@
 /* ---------- 面包屑 ---------- */
 .fi-breadcrumbs {
     @apply text-sm;
+
+    /* 当前页（最后一个非链接项）品牌色，强化导航锚点 */
+    & ol > li:last-child:not(:has(a)) {
+        @apply font-semibold text-brand-600 dark:text-white/90;
+    }
 }
 
 /* ---------- 下拉菜单项（Select / 操作菜单 / 批量操作，无处不在） ---------- */
@@ -249,6 +273,11 @@
     }
 }
 
+/* ---------- 空状态卡片（高频引导位，淡品牌渐变容器） ---------- */
+.fi-ta-empty-state-content {
+    @apply rounded-2xl bg-gradient-to-b from-brand-500/[0.04] to-accent-500/[0.04] px-8 py-6 ring-1 ring-brand-500/10;
+}
+
 /* ---------- 空状态图标（高频元素，品牌化） ---------- */
 .fi-ta-empty-state-icon-bg {
     @apply bg-gradient-to-br from-brand-500 to-accent-500 ring-1 ring-brand-500/20;
@@ -311,6 +340,19 @@
     & .fi-pagination-item-icon,
     & .fi-pagination-item-label {
         @apply text-white;
+    }
+}
+
+/* 非激活页码/前后翻页按钮 hover：品牌淡底 + 品牌字，整条分页器观感统一 */
+.fi-pagination-item:not(.fi-active) > .fi-pagination-item-btn:enabled {
+    @apply hover:bg-brand-500/[0.07] focus-visible:bg-brand-500/[0.07] dark:hover:bg-white/5 dark:focus-visible:bg-white/5;
+
+    &:hover,
+    &:focus-visible {
+        & .fi-pagination-item-label,
+        & .fi-icon {
+            @apply text-brand-600 dark:text-white/90;
+        }
     }
 }
 
