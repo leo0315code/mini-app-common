@@ -20,6 +20,7 @@ use UnitEnum;
 
 class TokenResource extends Resource
 {
+
     protected static ?string $model = PersonalAccessToken::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-key';
@@ -111,6 +112,7 @@ class TokenResource extends Resource
                         ),
                 ]),
             ])
+            ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }
 

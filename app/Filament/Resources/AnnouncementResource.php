@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AnnouncementResource extends Resource
 {
+
     use ManagesRichEditorAttachments;
 
     protected static ?string $model = Announcement::class;
@@ -185,6 +186,7 @@ class AnnouncementResource extends Resource
                     ForceDeleteBulkAction::make(),
                 ]),
             ])
+            ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }
 

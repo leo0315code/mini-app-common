@@ -29,6 +29,7 @@ use Filament\Tables\Table;
 
 class ArticleResource extends Resource
 {
+
     use ManagesRichEditorAttachments;
 
     protected static ?string $model = Article::class;
@@ -179,6 +180,7 @@ class ArticleResource extends Resource
                     ForceDeleteBulkAction::make(),
                 ]),
             ])
+            ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }
 

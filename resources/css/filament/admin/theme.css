@@ -235,12 +235,44 @@
     @apply transition duration-75 hover:bg-brand-500/5;
 }
 
+/* 斑马纹：偶数行极淡品牌底，长列表可读性（比 hover 更淡，不冲突） */
+.fi-ta-table .fi-ta-body .fi-ta-row:nth-child(even) {
+    @apply bg-gray-50/60 dark:bg-white/[0.02];
+
+    &:hover {
+        @apply bg-brand-500/5;
+    }
+}
+
+/* 选中行持久高亮：勾选后品牌淡底，与斑马纹/hover 区分（压过默认 bg-gray-50） */
+.fi-ta-row.fi-selected {
+    @apply bg-brand-500/[0.10] dark:bg-brand-500/10;
+
+    &:hover {
+        @apply bg-brand-500/[0.14] dark:bg-brand-500/15;
+    }
+}
+
 .fi-ta-header-cell {
     @apply bg-gray-50 font-semibold text-gray-600;
 }
 
 .fi-ta-header-cell > .fi-ta-header-cell-content {
     @apply py-3;
+}
+
+/* 表头吸顶 sticky：长列表滚动时列标题固定可见（原生 thead，整页滚动生效） */
+.fi-ta-table thead {
+    @apply sticky top-0 z-[2];
+}
+
+.fi-ta-table thead .fi-ta-header-cell {
+    @apply bg-gray-50;
+
+    /* 吸顶后必须不透明，否则下方行内容会透出 */
+    & > .fi-ta-header-cell-content {
+        @apply bg-gray-50;
+    }
 }
 
 /* 列表工具条（搜索/筛选/列管理所在行）极淡品牌渐变薄洗，融入品牌体系又不过度 */

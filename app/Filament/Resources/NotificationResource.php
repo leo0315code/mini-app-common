@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class NotificationResource extends Resource
 {
+
     use ExportsCsv;
     protected static ?string $model = Notification::class;
 
@@ -278,6 +279,7 @@ class NotificationResource extends Resource
                 ]),
             ])
             ->recordClasses(fn (Notification $record): ?string => $record->published ? null : 'fi-ta-row-unpublished')
+            ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }
 

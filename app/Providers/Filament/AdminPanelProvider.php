@@ -8,6 +8,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Tables\Table;
 use App\Filament\Pages\AdminLogin;
 use App\Http\Middleware\InjectAdminStyles;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -22,6 +23,16 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        // 全局表格体验增强：列拖拽/显隐 + 搜索防抖 + 筛选延迟应用
+        // 注册为 Table 宏，供各 Resource 在 table() 中 ->enhanceListExperience() 链式调用
+        Table::macro('enhanceListExperience', function (): Table {
+            /** @var Table $this */
+            return $this
+                ->reorderableColumns()
+                ->searchDebounce('500ms')
+                ->deferFilters();
+        });
+
         return $panel
             ->default()
             ->id('admin')

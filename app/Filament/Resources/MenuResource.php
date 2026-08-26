@@ -21,6 +21,7 @@ use UnitEnum;
 
 class MenuResource extends Resource
 {
+
     protected static ?string $model = Menu::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-group';
@@ -155,6 +156,7 @@ class MenuResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ])
+            ->enhanceListExperience()
             ->defaultSort('sort_order', 'asc');
     }
 

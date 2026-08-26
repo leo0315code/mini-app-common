@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AuditLogResource extends Resource
 {
+
     protected static ?string $model = AuditLog::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
@@ -138,6 +139,7 @@ class AuditLogResource extends Resource
             ->recordActions([
                 ViewAction::make(),
             ])
+            ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }
 

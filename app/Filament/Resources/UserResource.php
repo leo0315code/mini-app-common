@@ -37,6 +37,7 @@ use UnitEnum;
 
 class UserResource extends Resource
 {
+
     use ExportsCsv;
 
     protected static ?string $model = User::class;
@@ -636,6 +637,7 @@ class UserResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ])
+            ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }
 

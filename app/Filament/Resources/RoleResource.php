@@ -28,6 +28,7 @@ use UnitEnum;
 
 class RoleResource extends Resource
 {
+
     protected static ?string $model = Role::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-shield-check';
@@ -215,6 +216,7 @@ class RoleResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ])
+            ->enhanceListExperience()
             ->defaultSort('id', 'asc');
     }
 

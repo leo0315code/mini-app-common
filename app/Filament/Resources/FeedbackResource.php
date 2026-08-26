@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class FeedbackResource extends Resource
 {
+
     use ExportsCsv;
     protected static ?string $model = Feedback::class;
 
@@ -327,6 +328,7 @@ class FeedbackResource extends Resource
                 ]),
             ])
             ->recordClasses(fn (Feedback $record): ?string => $record->status === Feedback::STATUS_PENDING ? 'fi-ta-row-pending' : null)
+            ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }
 

@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 class SubscribeMessageFailureResource extends Resource
 {
+
     protected static ?string $model = SubscribeMessageFailure::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-exclamation-triangle';
@@ -398,6 +399,7 @@ class SubscribeMessageFailureResource extends Resource
                 ]),
             ])
             ->recordClasses(fn (SubscribeMessageFailure $record): ?string => $record->resolved_at === null ? 'fi-ta-row-danger' : null)
+            ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }
 

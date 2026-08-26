@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Storage;
 
 class BannerResource extends Resource
 {
+
     protected static ?string $model = Banner::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-photo';
@@ -160,6 +161,7 @@ class BannerResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ])
+            ->enhanceListExperience()
             ->defaultSort('sort_order')
             ->reorderable('sort_order');
     }
