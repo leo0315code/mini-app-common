@@ -55,10 +55,12 @@
 - **现状缺口**：RBAC 只控制「能否进后台」（`canAccessPanel`），进去之后任何管理员都能操作所有模块（含删除用户、改系统配置）。`app/Policies` 目录不存在。
 - **落地要点**：为每个 Resource 建 Policy，按角色 slug 控制 `viewAny/view/create/update/delete`；普通 admin 只给内容运营模块，super-admin 全量。
 
-### 6. 后台登录安全 ✅ 已部分落地（v1.17.0）
+### 6. 后台登录安全 ✅ 已落地（v1.17.0 ~ v1.18.0）
 - **现状缺口**：后台登录无独立限流、无登录/登出审计（`AuditObserver` 只监听模型 CRUD，不含登录事件）、没有修改密码页面。
 - **落地要点**：登录失败限流（`RateLimiter`）；登录成功/失败写 `audit_logs`；后台个人资料页支持改密码。
-- **实际落地**：v1.17 已补登录/登出/失败审计（`AdminAuthAuditListener` → `audit_logs`）+ 改密码页（`EditPassword`）。**登录失败限流（RateLimiter）仍待补**。
+- **实际落地**：
+  - v1.17 审计（`AdminAuthAuditListener` → `audit_logs` 记录 Login/Logout/Failed）+ 改密码页（`EditPassword`）。
+  - v1.18 登录防爆破限流：`AdminLogin` 自定义登录页在 Filament 内置 IP 级限流（每 IP 5 次/分钟）之上，叠加**账号级限流**（同邮箱+IP 1 分钟内 5 次超限拦截，失败累加、成功清除计数）。
 
 ### 7. 通知 / 公告定时发布
 - **现状缺口**：`published_at` 字段已存在且查询侧已兼容（`published_at <= now()`），但没有调度器自动把 `draft` 翻成 `published`，定时发布形同虚设。

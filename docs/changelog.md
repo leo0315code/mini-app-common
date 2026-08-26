@@ -4,6 +4,20 @@
 
 ---
 
+## [v1.18.0] - 2026-08-26
+
+后台登录防爆破限流（P2-6 收尾）：
+
+- 自定义 `App\Filament\Pages\AdminLogin extends Filament\Auth\Pages\Login`，在 `AdminPanelProvider->login(AdminLogin::class)` 注册。
+- 在 Filament 内置 IP 级限流（每 IP 5 次/分钟）之上，叠加**账号级限流**：
+  - 节流键 `admin-login:{sha1(email|ip)}`，同一邮箱 + 来源 IP 在 60 秒内最多尝试 5 次。
+  - 超限时提前拦截并返回危险通知，不再触发 `Failed` 事件 / 审计（防针对单账号的换 IP 爆破）。
+  - 失败尝试累加计数，成功登录后清除该账号计数（`RateLimiter::clear`）。
+- 测试 `AdminLoginRateLimitTest`：利用「限流后不再写 `login_failed` 审计」精确验证拦截生效（第 6 次调用不新增审计）；成功登录清除计数器。
+- **测试**：全量 **123 passed (326 assertions)**（本地 PHP 8.3.30 + SQLite）。
+
+---
+
 ## [v1.17.0] - 2026-08-26
 
 Banner 运营位 + 后台登录安全 + 事件发现修复：
