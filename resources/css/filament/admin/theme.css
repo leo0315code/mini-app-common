@@ -3,14 +3,153 @@
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
 
-/* 提高富文本编辑器正文输入区高度（默认 min-h-12 仅 48px，写文章太矮） */
+/* ============================================================
+   宏图爱 后台设计系统 — 主题层
+   品牌：teal(#0D9488) → sky(#0EA5E9) 渐变体系
+   ============================================================ */
+
+@theme {
+    --color-brand-500: #0d9488;
+    --color-brand-600: #0c7d73;
+    --color-accent-400: #38bdf8;
+    --color-accent-500: #0ea5e9;
+}
+
+/* ---------- 登录 / 认证页 ---------- */
+.fi-simple-main-ctn {
+    background:
+        radial-gradient(120% 120% at 0% 0%, rgb(13 148 136 / 0.18) 0%, transparent 55%),
+        radial-gradient(120% 120% at 100% 100%, rgb(14 165 233 / 0.18) 0%, transparent 55%),
+        linear-gradient(135deg, #0f172a 0%, #134e4a 55%, #0c4a6e 100%);
+}
+
+.fi-simple-page .fi-simple-header {
+    @apply mb-6 flex flex-col items-center text-center;
+}
+
+.fi-simple-header-heading {
+    @apply text-2xl font-semibold text-white;
+}
+
+.fi-simple-header-subheading {
+    @apply text-sm text-white/70;
+}
+
+/* 登录页品牌 logo 居中放大 + 白底圆角，强化识别度 */
+.fi-simple-page .fi-simple-header .fi-logo {
+    @apply rounded-2xl bg-white/10 p-2.5 shadow-lg ring-1 ring-white/20 backdrop-blur;
+    height: 3.5rem !important;
+    width: auto !important;
+}
+
+/* 登录卡片顶部渐变条点缀（品牌暗示） */
+.fi-simple-page-content .fi-section:not(.fi-section-not-contained)::before {
+    content: '';
+    @apply block h-1 w-full bg-gradient-to-r from-brand-500 to-accent-500;
+}
+
+/* 登录卡片（认证页内的 section 卡片） */
+.fi-simple-page-content .fi-section:not(.fi-section-not-contained) {
+    @apply overflow-hidden rounded-2xl border-0 shadow-2xl ring-1 ring-black/5;
+}
+
+.fi-simple-page-content .fi-section .fi-section-header {
+    @apply bg-gradient-to-r from-brand-500/10 to-accent-500/10;
+}
+
+/* ---------- 侧边栏 ---------- */
+.fi-sidebar-header-ctn {
+    @apply bg-gradient-to-b from-brand-500 to-accent-500;
+}
+
+:not(.fi-body-has-topbar) .fi-sidebar-header {
+    @apply bg-gradient-to-b from-brand-500 to-accent-500 shadow-md ring-0;
+
+    .fi-logo {
+        @apply ms-0 rounded-xl bg-white/15 p-1.5;
+    }
+}
+
+.fi-sidebar-header .fi-logo {
+    @apply drop-shadow-sm;
+}
+
+/* 侧栏活跃项：渐变胶囊 + 左强调条 */
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    @apply bg-gradient-to-r from-brand-500 to-accent-500 text-white shadow-md shadow-brand-500/20;
+
+    & > .fi-icon {
+        @apply text-white;
+    }
+
+    & > .fi-sidebar-item-label {
+        @apply text-white font-semibold;
+    }
+}
+
+.fi-sidebar-group-label {
+    @apply text-xs font-semibold uppercase tracking-wider text-gray-400;
+}
+
+/* ---------- 统计卡片（工作台） ---------- */
+.fi-wi-stats-overview-stat {
+    @apply overflow-hidden border-0 shadow-md ring-1 ring-gray-950/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl dark:ring-white/10;
+
+    & .fi-wi-stats-overview-stat-content .fi-icon {
+        @apply size-7 rounded-xl bg-gradient-to-br from-brand-500 to-accent-500 p-1.5 text-white shadow-sm;
+    }
+
+    & .fi-wi-stats-overview-stat-value {
+        @apply text-4xl font-bold tracking-tight text-gray-950 dark:text-white;
+    }
+}
+
+/* 统计卡片底部渐变条点缀 */
+.fi-wi-stats-overview-stat::after {
+    content: '';
+    @apply pointer-events-none absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-brand-500 to-accent-500;
+}
+
+/* ---------- 区块标题（Section） ---------- */
+.fi-section:not(.fi-section-not-contained) > .fi-section-header {
+    @apply border-b border-gray-100 dark:border-white/5;
+}
+
+.fi-section-header-heading {
+    @apply text-lg font-bold tracking-tight;
+}
+
+/* ---------- 顶栏 ---------- */
+.fi-topbar {
+    @apply bg-white/80 backdrop-blur dark:bg-gray-900/80;
+}
+
+/* ---------- 表格 ---------- */
+.fi-ta-table {
+    @apply overflow-hidden rounded-xl ring-1 ring-gray-950/5 dark:ring-white/10;
+}
+
+.fi-ta-row {
+    @apply transition duration-75 hover:bg-brand-500/5 dark:hover:bg-white/5;
+}
+
+.fi-ta-header-cell {
+    @apply bg-gray-50/80 font-semibold text-gray-600 dark:bg-white/5 dark:text-gray-300;
+}
+
+/* ---------- 面包屑 ---------- */
+.fi-breadcrumbs {
+    @apply text-sm;
+}
+
+/* ---------- 富文本编辑器 ---------- */
 .fi-fo-rich-editor .fi-fo-rich-editor-main .fi-fo-rich-editor-content {
     min-height: 28rem;
 }
 
 /* 反馈列表：待处理行高亮，便于一眼定位 */
 .fi-ta-row-pending > td {
-    background-color: rgb(254 243 199 / 0.5); /* amber-50，暗色下也可见 */
+    background-color: rgb(254 243 199 / 0.5);
 }
 
 /* 通知列表：未发布（用户端不可见）行淡化 */

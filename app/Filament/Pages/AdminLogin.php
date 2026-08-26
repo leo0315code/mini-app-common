@@ -57,4 +57,13 @@ class AdminLogin extends BaseLogin
     {
         return 'admin-login:'.sha1($email.'|'.request()->ip());
     }
+
+    /**
+     * 登录页副标题（品牌标语）。本后台关闭了注册，基类默认返回 null，
+     * 这里展示一句系统定位标语，强化品牌认知。
+     */
+    public function getSubheading(): string|\Illuminate\Contracts\Support\Htmlable|null
+    {
+        return '社区健康服务后台 · 用户运营与内容管理';
+    }
 }

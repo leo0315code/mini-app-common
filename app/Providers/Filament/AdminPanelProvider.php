@@ -28,9 +28,16 @@ class AdminPanelProvider extends PanelProvider
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login(AdminLogin::class)
             ->brandName('宏图爱')
+            ->brandLogo(asset('logo-light.svg'))
+            ->darkModeBrandLogo(asset('logo-dark.svg'))
+            ->brandLogoHeight('2rem')
+            ->favicon(asset('favicon.svg'))
             ->colors([
-                'primary' => Color::Emerald,
+                'primary' => Color::hex('#0D9488'),
+                'gray' => Color::hex('#475569'),
             ])
+            ->font('Instrument Sans')
+            ->maxContentWidth(\Filament\Support\Enums\Width::ScreenLarge)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([])

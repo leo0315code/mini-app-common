@@ -185,7 +185,7 @@ class User extends Authenticatable implements FilamentUser
      */
     public function audits(): HasMany
     {
-        return $this->hasMany(AuditLog::class, 'actor_id')
+        return $this->hasMany(AuditLog::class, 'user_id')
             ->orderBy('created_at', 'desc');
     }
 
@@ -222,6 +222,26 @@ class User extends Authenticatable implements FilamentUser
             'banned_at' => null,
             'ban_reason' => null,
         ])->save();
+    }
+
+    /**
+     * 性别文案（统一口径，避免 form/infolist/导出 各处漂移）。
+     */
+    public static function genderLabel(int | string | null $gender): string
+    {
+        return match ((int) $gender) {
+            1 => '男',
+            2 => '女',
+            default => '未知',
+        };
+    }
+
+    /**
+     * 状态文案（统一口径）。
+     */
+    public static function statusLabel(string | null $status): string
+    {
+        return $status === self::STATUS_BANNED ? '已封禁' : '正常';
     }
 
     /**
