@@ -210,6 +210,10 @@ cat backup.sql | docker compose exec -T mysql sh -c "mysql -u\$MYSQL_USER -p\$MY
 3. **微信回调域名**：在小程序后台配置「request 合法域名」为你的后端域名（必须 HTTPS）。
 4. **队列与缓存**：生产建议配置 Redis 缓存（`CACHE_DRIVER=redis`）。
 5. **Web 服务器**：生产用 Nginx + PHP-FPM，文档根目录指向 `public/`，并配置伪静态（Laravel 已内置 `.htaccess`，Nginx 需 `try_files $uri /index.php?$query_string;`）。
+6. **部署前校验迁移同步**：CI 已对 MySQL 引擎跑测试，但仍有「本地 SQLite 测试全过、生产库缺迁移列导致 500」的风险。每次发布前请确认：
+   - 已执行 `php artisan migrate --force`（或用 `composer setup` 自动包含）；
+   - 执行 `composer db:check`（即 `php artisan db:check`）确认无待执行迁移，返回非 0 即表示代码与数据库 schema 脱节，需先 migrate。
+   - 开发自测建议同时用真实 MySQL 跑一遍测试：`DB_CONNECTION=mysql vendor/bin/phpunit`，避免 SQLite 与 MySQL 行为差异漏检。
 
 ---
 

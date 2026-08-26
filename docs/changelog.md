@@ -47,6 +47,19 @@ Token 会话管理增强（P3-11）：设备信息与一键踢下线。
 
 ---
 
+## [v1.22.0] - 2026-08-26
+
+工程化门禁：数据库迁移一致性校验（P4-17）。
+
+- 新增 `app/Console/Commands/DbCheck.php`（`php artisan db:check`）：比对 `database/migrations` 文件与 `migrations` 表已执行项，存在待执行迁移则列出并以退出码 1 失败；同步时无输出非零（退出 0）。
+- `composer.json` 增加 `db:check` 脚本，并接入 `setup` 流程（`migrate` 之后自动校验），防止部署后代码与数据库 schema 脱节。
+- `.github/workflows/ci.yml` 测试矩阵由单 `sqlite` 扩展为 `[sqlite, mysql]` 双引擎：MySQL 服务容器真实执行迁移并跑测试，能复现 SQLite 掩盖的 MySQL 专属 schema 问题（如软删除 `deleted_at` 缺列的 500 事故）；MySQL 矩阵额外追加 `php artisan db:check` 门禁步骤。
+- 文档 `install.md` 生产部署要点增加「部署前 `composer db:check` 校验」与「本地建议用真实 MySQL 跑测试」说明。
+- 动机：此前 v1.19/v1.21 的迁移在本地 SQLite 测试全过，但生产 MySQL 未执行迁移即上线，触发 `announcements.deleted_at` 缺列 500；本门禁从 CI 与部署两端阻断此类回归。
+- **验证**：本地用隔离 MySQL 库模拟 CI 的 mysql 矩阵，全量 **135 passed (373 assertions)**。
+
+---
+
 ## [v1.18.0] - 2026-08-26
 
 后台登录防爆破限流（P2-6 收尾）：
