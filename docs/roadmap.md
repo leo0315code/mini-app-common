@@ -87,9 +87,10 @@
 - **落地要点**：`articles / announcements / media` 优先加软删 + 后台「回收站」筛选页；删除策略统一（软删记录，硬删才清文件）。
 - **实际落地**：迁移加 `deleted_at`；三模型 `use SoftDeletes`；公开接口 `scopePublished` 排除 trashed（防软删内容泄露）；`Media` 的 `deleting` 事件改为仅 `forceDelete` 清文件；Filament 三资源列表接入 `TrashedFilter` + 恢复/硬删 action（单条与批量）；`SoftDeleteTest` 覆盖。
 
-### 11. Token 会话管理增强
+### 11. Token 会话管理增强 ✅ 已落地（v1.21.0）
 - **现状缺口**：Token 只能逐个或批量撤销，看不到设备信息；没有「按用户一键下线全部设备」。
 - **落地要点**：签发时记录设备名/UA 摘要；用户详情页聚合展示其 Token 并支持一键踢下线。
+- **实际落地**：迁移为 `personal_access_tokens` 加 `device_name`/`user_agent`；`AuthController::login` 写入（UA 缺省按 iOS/Android/Windows/Mac 推断）；`TokenResource` 列表展示设备列 + 「踢下线 / 批量踢下线」action；新增 `DeviceController` 提供小程序侧 `GET /api/me/devices`（设备列表、`is_current` 标记、脱敏不含明文）、`DELETE /api/me/devices/{id}`（踢单台、禁止踢当前）、`DELETE /api/me/devices`（一键踢下线其余）；`TokenDeviceTest`（6 例）覆盖。
 
 ### 12. 用户详情聚合页 ✅ 已落地（v1.13.0）
 - **现状缺口**：用户只有编辑表单，看不到该用户的通知已读情况、反馈历史、审计轨迹、Token 列表，排查问题要开四个页面分别搜。
@@ -126,13 +127,13 @@
 | --- | --- | --- |
 | 近期 | P1 全部（订阅消息、封禁、仪表盘、导出） | v1.9.0 ~ v1.16.0 |
 | 中期 | P2 权限（v1.12）、登录安全审计+改密码（v1.17）、登录限流（v1.18）、定时发布（v1.13 调度器）、Banner（v1.17） | v1.12.0 ~ v1.18.0 |
-| 空闲穿插 | P3 体验项（用户详情聚合页 v1.13、富文本插图 v1.13、审计覆盖补全 v1.13、软删除回收站 v1.19） | v1.13.0 ~ v1.19.0 |
+| 空闲穿插 | P3 体验项（用户详情聚合页 v1.13、富文本插图 v1.13、审计覆盖补全 v1.13、软删除回收站 v1.19、Token 会话管理 v1.21） | v1.13.0 ~ v1.21.0 |
 | 远期 | P4 架构演进（多租户 v2.0、消息渠道抽象、备份、工程化门禁） | v3.0（破坏性） |
 
 ---
 
-## 已知工程问题（非本迭代引入，待 P3 修复）
+## 已知工程问题（非本迭代引入，待 P4 修复）
 
-- **`tests/Feature/CmsTest` 编辑页 404（2 例）**：`/admin/articles/{id}/edit` 与 `/admin/categories/{id}/edit` 在测试中返回 404。Edit 页面定义（`extends EditRecord` + `$resource`）与 `getPages()` 路由均正常，疑为 Filament v5 编辑页在测试 HTTP 引导下的渲染/路由解析问题，需单独排查。
+- **`tests/Feature/CmsTest` 编辑页 404（2 例）**：`/console/articles/{id}/edit` 与 `/console/categories/{id}/edit` 在测试中返回 404。Edit 页面定义（`extends EditRecord` + `$resource`）与 `getPages()` 路由均正常，疑为 Filament v5 编辑页在测试 HTTP 引导下的渲染/路由解析问题，需单独排查。
 - **`tests/Feature/PhoneTest::test_bind_phone_success` 401**：`PhoneController::bind` 在 `WechatService::getPhoneNumber` 抛 `RuntimeException` 时 catch 返回 401。测试中 `Http::fake` 序列与 `@code` 校验逻辑需核对，属用例/服务桩问题，非接口缺陷。
 - 以上 3 例在 v1.9.0 基线即存在，P1-3 仪表盘扩展未引入任何回归。

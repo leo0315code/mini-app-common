@@ -63,6 +63,15 @@ class TokenResource extends Resource
                 TextColumn::make('name')
                     ->label('Token 名称')
                     ->searchable(),
+                TextColumn::make('device_name')
+                    ->label('设备')
+                    ->searchable()
+                    ->placeholder('—'),
+                TextColumn::make('user_agent')
+                    ->label('客户端 UA')
+                    ->limit(40)
+                    ->tooltip(fn ($state) => $state)
+                    ->placeholder('—'),
                 TextColumn::make('last_used_at')
                     ->label('最后使用')
                     ->dateTime('Y-m-d H:i')
@@ -81,20 +90,23 @@ class TokenResource extends Resource
             ])
             ->recordActions([
                 DeleteAction::make()
-                    ->label('撤销')
+                    ->label('踢下线')
+                    ->icon('heroicon-o-no-symbol')
+                    ->color('danger')
+                    ->requiresConfirmation()
                     ->successNotification(
                         Notification::make()
-                            ->title('Token 已撤销')
+                            ->title('该设备已踢下线')
                             ->success(),
                     ),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                        ->label('批量撤销')
+                        ->label('批量踢下线')
                         ->successNotification(
                             Notification::make()
-                                ->title('选中的 Token 已撤销')
+                                ->title('选中的设备已踢下线')
                                 ->success(),
                         ),
                 ]),

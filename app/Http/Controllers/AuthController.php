@@ -54,13 +54,18 @@ class AuthController extends Controller
             ], 403);
         }
 
-        $token = $user->createToken('mini-program')->plainTextToken;
+        $tokenResult = $user->createToken('mini-program');
+        // P3-11：记录登录设备信息，用于「我的设备 / 会话管理 / 一键踢下线」
+        $tokenResult->accessToken->forceFill([
+            'device_name' => trim((string) $request->input('device_name', '')) ?: ($this->guessDeviceName($request) ?? '未知设备'),
+            'user_agent' => (string) $request->header('User-Agent', $request->input('user_agent', '')),
+        ])->save();
 
         return response()->json([
             'code' => 0,
             'message' => '登录成功',
             'data' => [
-                'token' => $token,
+                'token' => $tokenResult->plainTextToken,
                 'token_type' => 'Bearer',
                 'user' => new UserResource($user),
             ],
@@ -78,5 +83,29 @@ class AuthController extends Controller
             'code' => 0,
             'message' => '已退出登录',
         ]);
+    }
+
+    /**
+     * 根据 User-Agent 粗略推断设备名（仅作缺省值，前端可显式传 device_name 覆盖）。
+     */
+    private function guessDeviceName(\Illuminate\Http\Request $request): ?string
+    {
+        $ua = (string) $request->header('User-Agent', '');
+        if ($ua === '') {
+            return null;
+        }
+        if (preg_match('/iPhone|iPad|iPod/i', $ua)) {
+            return 'iOS 设备';
+        }
+        if (preg_match('/Android/i', $ua)) {
+            return 'Android 设备';
+        }
+        if (preg_match('/Windows/i', $ua)) {
+            return 'Windows 设备';
+        }
+        if (preg_match('/Macintosh|Mac OS/i', $ua)) {
+            return 'Mac 设备';
+        }
+        return '未知设备';
     }
 }

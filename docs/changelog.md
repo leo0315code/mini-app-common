@@ -30,6 +30,23 @@
 
 ---
 
+## [v1.21.0] - 2026-08-26
+
+Token 会话管理增强（P3-11）：设备信息与一键踢下线。
+
+- 迁移 `2026_08_26_001100_add_device_info_to_personal_access_tokens`：为 `personal_access_tokens` 增加 `device_name` / `user_agent`（保持 Sanctum 表结构兼容）。
+- `AuthController::login`：接收 `device_name`（缺省按 User-Agent 推断 iOS / Android / Windows / Mac），写入 token 实例。
+- 后台 `TokenResource`：列表新增「设备 / 客户端 UA」列；行内 action 改为「踢下线（危险色 + 二次确认）」、批量改为「批量踢下线」。
+- 小程序侧新增「我的设备 / 会话管理」接口（受保护组）：
+  - `GET /api/me/devices`：当前用户全部会话（脱敏、标记 `is_current`、不含 token 明文）。
+  - `DELETE /api/me/devices/{id}`：踢单台（仅限本人、禁止踢当前）。
+  - `DELETE /api/me/devices`：一键踢下线其余所有设备。
+- 测试 `TokenDeviceTest`（6 例）：登录写入设备信息、UA 推断回退、列表 `is_current`、单台踢下线后该 token 访问 401、禁踢当前、一键踢下线仅剩当前。
+- **测试**：全量 **135 passed (373 assertions)**（本地 PHP 8.3.30 + SQLite）。
+- 注：测试单例容器内 sanctum guard 跨请求缓存 user，已在测试中用 `Auth::guard('sanctum')->forgetUser()` 清除以正确验证踢下线；生产环境每次请求重新解析 token，删除后必 401。
+
+---
+
 ## [v1.18.0] - 2026-08-26
 
 后台登录防爆破限流（P2-6 收尾）：

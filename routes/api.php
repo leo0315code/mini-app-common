@@ -3,6 +3,7 @@
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\BannerController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\MediaController;
@@ -38,6 +39,11 @@ Route::middleware(['auth:sanctum', 'auth.banned'])->group(function () {
     Route::put('/user', [UserController::class, 'update']);
     Route::post('/user/phone', [PhoneController::class, 'bind']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+
+    // 我的设备 / 会话管理（P3-11）：设备列表、单台踢下线、一键踢下线
+    Route::get('/me/devices', [DeviceController::class, 'index']);
+    Route::delete('/me/devices/{id}', [DeviceController::class, 'destroy']);
+    Route::delete('/me/devices', [DeviceController::class, 'destroyOthers']);
 
     // 用户反馈（登录后提交）
     Route::post('/feedback', [FeedbackController::class, 'store']);
