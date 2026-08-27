@@ -328,6 +328,7 @@ class FeedbackResource extends Resource
                 ]),
             ])
             ->recordClasses(fn (Feedback $record): ?string => $record->status === Feedback::STATUS_PENDING ? 'fi-ta-row-pending' : null)
+            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }

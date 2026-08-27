@@ -139,6 +139,7 @@ class AuditLogResource extends Resource
             ->recordActions([
                 ViewAction::make(),
             ])
+            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }

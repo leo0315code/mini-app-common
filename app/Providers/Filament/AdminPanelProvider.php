@@ -23,14 +23,16 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        // 全局表格体验增强：列拖拽/显隐 + 搜索防抖 + 筛选延迟应用
+        // 全局表格体验增强：列拖拽/显隐 + 搜索防抖 + 筛选延迟应用 + 分页默认20/可切10·20·50
         // 注册为 Table 宏，供各 Resource 在 table() 中 ->enhanceListExperience() 链式调用
         Table::macro('enhanceListExperience', function (): Table {
             /** @var Table $this */
             return $this
                 ->reorderableColumns()
                 ->searchDebounce('500ms')
-                ->deferFilters();
+                ->deferFilters()
+                ->defaultPaginationPageOption(20)
+                ->paginationPageOptions([10, 20, 50]);
         });
 
         return $panel
