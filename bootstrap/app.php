@@ -20,6 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.banned' => \App\Http\Middleware\EnsureUserNotBanned::class,
             'menu.permission' => \App\Http\Middleware\CheckMenuPermission::class,
         ]);
+
+        // 启用 api 组限流（throttle:api，RateLimiter::for('api') 在 AppServiceProvider 定义：
+        // 60 次/分钟/用户(未登录按 IP)。withRouting(api:) 不会自动挂 throttle，需显式启用）
+        $middleware->throttleApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // API 请求统一返回 JSON 格式
