@@ -481,24 +481,69 @@
         @apply absolute left-0 top-1/2 h-[1.1em] w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-brand-500 to-accent-500;
     }
 }
-/* 弹窗窗口：统一限高 + 内部滚动兜底
-   根因：Filament v5 默认对「无 sticky 头/尾」的普通弹窗不设置 max-height，
-   仅给外层 .fi-modal-window-ctn 加 overflow-y-auto（无高度约束 → 不裁切也不滚）；
-   再叠加此前 .fi-modal-window 上的 overflow-hidden 直接切断滚动回退，导致超高内容
-   超出视口却无滚动条、被固定层挡住下半部分。此处给窗口自身补 max-height + 内部滚动，
-   兼顾「普通弹窗」与「sticky 弹窗」（后者由 Filament 自带规则仍以更高特异性生效）。
-   顶部品牌渐变条改为 sticky 吸顶，滚动时始终可见，与登录/统计卡片点缀呼应 */
-.fi-modal-window {
-    @apply max-h-[calc(100dvh-2.5rem)] overflow-y-auto;
+/* 弹窗窗口：flex 纵向布局，滚动交给内容区，头尾常驻
+   根因：Filament 自带 .fi-modal-window{max-height;overflow-y:auto}（特异性 0,2,0）
+   会把整窗做成滚动容器，保存/取消 footer 被卷进内容 —— 长表单须滚到底才能提交，
+   违反操作可达性；且其 sticky footer 仅兜底、header/footer 仍随窗口滚动层。
+   解法：用等特异性（.fi-modal-window-ctn > .fi-modal-window）压过自带规则，
+   窗口仅做 flex column + 限高 + overflow-hidden，禁止整窗滚动；
+   仅 .fi-modal-content 承担 flex-1 min-h-0 overflow-y-auto 内部滚动，
+   header/footer 用 shrink-0 真正常驻视口，长表单保存按钮始终可见可点。
+   顶部品牌渐变条 shrink-0 + sticky 吸顶，滚动时始终可见，与登录/统计卡片呼应 */
+.fi-modal-window-ctn > .fi-modal-window {
+    @apply flex max-h-[calc(100dvh-2.5rem)] flex-col overflow-hidden;
+}
 
-    &::before {
-        content: '';
-        @apply sticky top-0 z-[1] block h-1 w-full bg-gradient-to-r from-brand-500 to-accent-500;
+.fi-modal-window-ctn > .fi-modal-window::before {
+    content: '';
+    @apply sticky top-0 z-[1] block h-1 w-full shrink-0 bg-gradient-to-r from-brand-500 to-accent-500;
+}
+
+.fi-modal-window-ctn > .fi-modal-window .fi-modal-content {
+    @apply min-h-0 flex-1 overflow-y-auto;
+
+    /* 覆盖 Filament 自带 margin-bottom:-6：短表单时让内容与常驻 footer 拉开呼吸感，
+       长表单时滚动区独立裁切不受影响 */
+    @apply pb-6;
+
+    /* 内容区细滚动条：与侧栏/表格滚动条同源，避免默认粗条破坏品牌观感 */
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+
+    &::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 4px;
+
+        &:hover {
+            background-color: #94a3b8;
+        }
     }
 }
 
-.fi-modal-header {
-    @apply border-b border-gray-100;
+/* 弹窗关闭按钮 hover 品牌化：与顶栏图标按钮(.fi-topbar-item-btn)同源，
+   默认中性灰关闭键与品牌弹窗割裂，hover 接管为品牌淡底 + 品牌图标 */
+.fi-modal-window-ctn > .fi-modal-window .fi-modal-close-btn {
+    @apply rounded-lg transition duration-150 hover:bg-brand-500/[0.07];
+
+    &:hover > .fi-icon {
+        @apply text-brand-600;
+    }
+}
+
+.fi-modal-window-ctn > .fi-modal-window > .fi-modal-header {
+    @apply shrink-0 border-b border-gray-100;
+}
+
+.fi-modal-window-ctn > .fi-modal-window > .fi-modal-footer {
+    @apply shrink-0 border-t border-gray-100;
 }
 .fi-fo-rich-editor .fi-fo-rich-editor-main .fi-fo-rich-editor-content {
     min-height: 28rem;
