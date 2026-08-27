@@ -4,36 +4,48 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\Category;
+use App\Support\ContentCacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ArticleController extends Controller
 {
+    public function __construct(
+        protected ContentCacheService $cache,
+    ) {}
+
     /**
      * 小程序端获取已发布文章列表（可经 ?category_id 按频道过滤）。
+     * 列表缓存（版本号 + 短 TTL），参数不同缓存键不同；详情接口不缓存（含 views 自增）。
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Article::published()->with(['category:id,name,slug', 'author:id,nickname,name']);
+        $categoryId = $request->filled('category_id') ? $request->integer('category_id') : null;
+        $keyword = $request->input('keyword');
 
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->integer('category_id'));
-        }
+        $cacheKey = 'articles_'.md5(json_encode([$categoryId, $keyword]));
 
-        if ($request->filled('keyword')) {
-            $keyword = $request->input('keyword');
-            $query->where(function ($q) use ($keyword) {
-                $q->where('title', 'like', '%' . $keyword . '%')
-                    ->orWhere('summary', 'like', '%' . $keyword . '%');
-            });
-        }
+        $list = $this->cache->remember($cacheKey, function () use ($categoryId, $keyword) {
+            $query = Article::published()->with(['category:id,name,slug', 'author:id,nickname,name']);
 
-        $list = $query->ordered()->paginate(20);
+            if ($categoryId) {
+                $query->where('category_id', $categoryId);
+            }
+
+            if ($keyword) {
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('title', 'like', '%' . $keyword . '%')
+                        ->orWhere('summary', 'like', '%' . $keyword . '%');
+                });
+            }
+
+            return $query->ordered()->paginate(20)->items();
+        });
 
         return response()->json([
             'code' => 0,
             'message' => 'success',
-            'data' => $list->items(),
+            'data' => $list,
         ]);
     }
 

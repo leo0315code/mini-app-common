@@ -27,6 +27,7 @@ use App\Policies\RolePolicy;
 use App\Policies\SubscribeMessageFailurePolicy;
 use App\Policies\UserPolicy;
 use App\Observers\AuditObserver;
+use App\Observers\ContentCacheObserver;
 use App\Observers\PermissionCacheObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -57,6 +58,12 @@ class AppServiceProvider extends ServiceProvider
         Role::observe(AuditObserver::class);
         Menu::observe(AuditObserver::class);
         Banner::observe(AuditObserver::class);
+
+        // C 端公开内容缓存：公告/文章/分类/运营位写事件 → 缓存失效
+        Announcement::observe(ContentCacheObserver::class);
+        Article::observe(ContentCacheObserver::class);
+        Category::observe(ContentCacheObserver::class);
+        Banner::observe(ContentCacheObserver::class);
 
         Role::observe(PermissionCacheObserver::class);
         Menu::observe(PermissionCacheObserver::class);
