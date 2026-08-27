@@ -2,6 +2,7 @@
 
 use App\Console\Commands\PublishScheduled;
 use App\Console\Commands\RetryFailedSubscribeMessages;
+use App\Console\Commands\SyncArticleViews;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -34,3 +35,9 @@ Schedule::command(RetryFailedSubscribeMessages::class, ['--limit=100'])
     ->withoutOverlapping()
     ->runInBackground()
     ->description('重试失败表中未解决的订阅消息');
+
+// 文章浏览数 Redis 计数器落库：每 5 分钟累加一次
+Schedule::command(SyncArticleViews::class)
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->description('Redis 文章浏览计数同步到数据库');

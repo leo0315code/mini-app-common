@@ -51,6 +51,9 @@ class Article extends Model
     public const STATUS_PUBLISHED = 'published';
     public const STATUS_OFFLINE = 'offline';
 
+    /** Redis 浏览数计数器前缀（articles:sync-views 定时落库后清零） */
+    public const VIEWS_COUNTER_PREFIX = 'article_views:';
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);

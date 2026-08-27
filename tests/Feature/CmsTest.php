@@ -59,7 +59,8 @@ class CmsTest extends TestCase
     }
 
     /**
-     * 已发布文章详情可访问，且浏览数自增。
+     * 已发布文章详情可访问；浏览数走 Redis 计数器（DB 不立即自增，
+     * 由 articles:sync-views 定时落库）。
      */
     public function test_published_article_detail_increments_views(): void
     {
@@ -72,10 +73,16 @@ class CmsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.id', $article->id);
 
+        // DB 保持不变（未同步）
         $this->assertDatabaseHas('articles', [
             'id' => $article->id,
-            'views' => 6,
+            'views' => 5,
         ]);
+
+        // Redis 计数器 +1
+        $this->assertSame(1, (int) \Illuminate\Support\Facades\Redis::get(
+            Article::VIEWS_COUNTER_PREFIX.$article->id,
+        ));
     }
 
     /**
