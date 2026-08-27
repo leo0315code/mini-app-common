@@ -131,8 +131,9 @@ class CategoryResource extends Resource
     {
         return [
             'index' => Pages\ListCategories::route('/'),
-            'view' => Pages\ViewCategory::route('/{record}'),
             'create' => Pages\CreateCategory::route('/create'),
+
+            'view' => Pages\ViewCategory::route('/{record}'),
             'edit' => Pages\EditCategory::route('/{record}/edit'),
         ];
     }

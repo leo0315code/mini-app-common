@@ -44,7 +44,8 @@ class MenuResource extends Resource
             ->components([
                 Forms\Components\Select::make('parent_id')
                     ->label('父级菜单')
-                    ->relationship('parent', 'name')
+                    ->relationship('parent',
+            'name')
                     ->searchable()
                     ->preload()
                     ->nullable()
@@ -182,7 +183,8 @@ class MenuResource extends Resource
             ])
             ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
-            ->defaultSort('sort_order', 'asc');
+            ->defaultSort('sort_order',
+            'asc');
     }
 
     public static function getRelations(): array
@@ -194,8 +196,9 @@ class MenuResource extends Resource
     {
         return [
             'index' => Pages\ListMenus::route('/'),
-            'view' => Pages\ViewMenu::route('/{record}'),
             'create' => Pages\CreateMenu::route('/create'),
+
+            'view' => Pages\ViewMenu::route('/{record}'),
             'edit' => Pages\EditMenu::route('/{record}/edit'),
         ];
     }

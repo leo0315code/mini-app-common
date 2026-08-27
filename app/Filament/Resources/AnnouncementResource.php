@@ -88,9 +88,15 @@ class AnnouncementResource extends Resource
                             ->fileAttachmentsDirectory('rich-editor/'.now()->format('Ym'))
                             ->saveUploadedFileAttachmentUsing(self::richEditorSaveAttachmentCallback('public'))
                             ->toolbarButtons([
-                                'bold', 'italic', 'bulletList', 'orderedList',
-                                'link', 'blockquote', 'attachFiles',
-                                'undo', 'redo',
+                                'bold',
+            'italic',
+            'bulletList',
+            'orderedList',
+            'link',
+            'blockquote',
+            'attachFiles',
+            'undo',
+            'redo',
                             ]),
                     ]),
             ]);
@@ -152,7 +158,7 @@ class AnnouncementResource extends Resource
                     })
                     ->color(fn (string $state): string => match ($state) {
                         'activity' => 'success',
-                        'update' => 'info',
+            'update' => 'info',
                         default => 'gray',
                     }),
                 TextColumn::make('status')
@@ -166,7 +172,7 @@ class AnnouncementResource extends Resource
                     })
                     ->color(fn (string $state): string => match ($state) {
                         'published' => 'success',
-                        'offline' => 'gray',
+            'offline' => 'gray',
                         default => 'warning',
                     }),
                 TextColumn::make('author.name')
@@ -222,7 +228,8 @@ class AnnouncementResource extends Resource
             ])
             ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('created_at',
+            'desc');
     }
 
     public static function getRelations(): array
@@ -234,8 +241,9 @@ class AnnouncementResource extends Resource
     {
         return [
             'index' => Pages\ListAnnouncements::route('/'),
-            'view' => Pages\ViewAnnouncement::route('/{record}'),
             'create' => Pages\CreateAnnouncement::route('/create'),
+
+            'view' => Pages\ViewAnnouncement::route('/{record}'),
             'edit' => Pages\EditAnnouncement::route('/{record}/edit'),
         ];
     }

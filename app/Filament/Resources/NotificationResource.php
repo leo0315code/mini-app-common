@@ -60,8 +60,8 @@ class NotificationResource extends Resource
                             ->label('类型')
                             ->options([
                                 'system' => '系统通知',
-                                'activity' => '活动',
-                                'version' => '版本更新',
+            'activity' => '活动',
+            'version' => '版本更新',
                             ])
                             ->default('system')
                             ->required(),
@@ -69,8 +69,8 @@ class NotificationResource extends Resource
                             ->label('接收范围')
                             ->options([
                                 'all' => '全部用户',
-                                'registered' => '已注册小程序用户',
-                                'specified' => '指定用户',
+            'registered' => '已注册小程序用户',
+            'specified' => '指定用户',
                             ])
                             ->default('all')
                             ->required()
@@ -84,7 +84,8 @@ class NotificationResource extends Resource
                             ->multiple()
                             ->searchable()
                             ->preload()
-                            ->options(fn () => User::query()->pluck('nickname', 'id')->filter()->all())
+                            ->options(fn () => User::query()->pluck('nickname',
+            'id')->filter()->all())
                             ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => $get('scope') === 'specified'),
                     ])
                     ->collapsible(),
@@ -115,15 +116,15 @@ class NotificationResource extends Resource
                 TextEntry::make('type')->label('类型')->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'system' => '系统通知',
-                        'activity' => '活动',
-                        'version' => '版本更新',
+            'activity' => '活动',
+            'version' => '版本更新',
                         default => $state,
                     }),
                 TextEntry::make('scope')->label('接收范围')->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'all' => '全部用户',
-                        'registered' => '已注册用户',
-                        'specified' => '指定用户',
+            'registered' => '已注册用户',
+            'specified' => '指定用户',
                         default => $state,
                     }),
                 TextEntry::make('published')->label('立即发布')->formatStateUsing(fn ($s): string => $s ? '是' : '否')->badge()->color(fn ($s): string => $s ? 'success' : 'gray'),
@@ -172,12 +173,12 @@ class NotificationResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'activity' => '活动',
-                        'version' => '版本更新',
+            'version' => '版本更新',
                         default => '系统通知',
                     })
                     ->color(fn (string $state): string => match ($state) {
                         'activity' => 'success',
-                        'version' => 'info',
+            'version' => 'info',
                         default => 'gray',
                     }),
                 TextColumn::make('scope')
@@ -185,7 +186,7 @@ class NotificationResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'registered' => '已注册',
-                        'specified' => '指定用户',
+            'specified' => '指定用户',
                         default => '全部',
                     }),
                 TextColumn::make('recipients_count')
@@ -227,22 +228,23 @@ class NotificationResource extends Resource
                     ->label('类型')
                     ->options([
                         'system' => '系统通知',
-                        'activity' => '活动',
-                        'version' => '版本更新',
+            'activity' => '活动',
+            'version' => '版本更新',
                     ]),
                 SelectFilter::make('scope')
                     ->label('范围')
                     ->options([
                         'all' => '全部',
-                        'registered' => '已注册',
-                        'specified' => '指定用户',
+            'registered' => '已注册',
+            'specified' => '指定用户',
                     ]),
                 TernaryFilter::make('published')
                     ->label('已发布')
                     ->nullable(),
                 SelectFilter::make('user')
                     ->label('接收用户')
-                    ->options(User::pluck('nickname', 'id')->filter()->toArray())
+                    ->options(User::pluck('nickname',
+            'id')->filter()->toArray())
                     ->query(fn (Builder $query, array $data) => $query->when($data['value'], fn ($q, $v) => $q->whereHas('recipients', fn (Builder $q) => $q->where('user_id', $v)))),
             ])
             ->recordActions([
@@ -254,16 +256,16 @@ class NotificationResource extends Resource
                     baseQuery: Notification::query()->with(['creator'])->withCount('recipients'),
                     columnMap: [
                         'id' => 'ID',
-                        'title' => '标题',
-                        'type_txt' => '类型',
-                        'scope_txt' => '接收范围',
-                        'body' => '正文',
-                        'published_txt' => '发布状态',
-                        'recipients_count' => '接收人数',
-                        'read_rate' => '已读率',
-                        'creator_name' => '发送人',
-                        'created_at_txt' => '创建时间',
-                        'published_at_txt' => '发布时间',
+            'title' => '标题',
+            'type_txt' => '类型',
+            'scope_txt' => '接收范围',
+            'body' => '正文',
+            'published_txt' => '发布状态',
+            'recipients_count' => '接收人数',
+            'read_rate' => '已读率',
+            'creator_name' => '发送人',
+            'created_at_txt' => '创建时间',
+            'published_at_txt' => '发布时间',
                     ],
                     label: '导出全部通知',
                     fileNamePrefix: 'notifications',
@@ -272,12 +274,12 @@ class NotificationResource extends Resource
                         (string) $n->title,
                         match ((string) $n->type) {
                             'activity' => '活动',
-                            'version' => '版本更新',
+            'version' => '版本更新',
                             default => '系统通知',
                         },
                         match ((string) $n->scope) {
                             'registered' => '已注册',
-                            'specified' => '指定用户',
+            'specified' => '指定用户',
                             default => '全部',
                         },
                         (string) $n->body,
@@ -301,12 +303,12 @@ class NotificationResource extends Resource
                     self::buildExportSelectedBulkAction(
                         columnMap: [
                             'id' => 'ID',
-                            'title' => '标题',
-                            'type_txt' => '类型',
-                            'scope_txt' => '接收范围',
-                            'published_txt' => '发布状态',
-                            'recipients_count' => '接收人数',
-                            'created_at_txt' => '创建时间',
+            'title' => '标题',
+            'type_txt' => '类型',
+            'scope_txt' => '接收范围',
+            'published_txt' => '发布状态',
+            'recipients_count' => '接收人数',
+            'created_at_txt' => '创建时间',
                         ],
                         label: '导出所选 CSV',
                         fileNamePrefix: 'notifications',
@@ -315,12 +317,12 @@ class NotificationResource extends Resource
                             (string) $n->title,
                             match ((string) $n->type) {
                                 'activity' => '活动',
-                                'version' => '版本更新',
+            'version' => '版本更新',
                                 default => '系统通知',
                             },
                             match ((string) $n->scope) {
                                 'registered' => '已注册',
-                                'specified' => '指定用户',
+            'specified' => '指定用户',
                                 default => '全部',
                             },
                             $n->published ? '已发布' : '草稿',
@@ -334,7 +336,8 @@ class NotificationResource extends Resource
             ->recordClasses(fn (Notification $record): ?string => $record->published ? null : 'fi-ta-row-unpublished')
             ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('created_at',
+            'desc');
     }
 
     public static function getRelations(): array
@@ -346,8 +349,9 @@ class NotificationResource extends Resource
     {
         return [
             'index' => Pages\ListNotifications::route('/'),
-            'view' => Pages\ViewNotification::route('/{record}'),
             'create' => Pages\CreateNotification::route('/create'),
+
+            'view' => Pages\ViewNotification::route('/{record}'),
             'edit' => Pages\EditNotification::route('/{record}/edit'),
         ];
     }

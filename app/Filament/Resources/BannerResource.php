@@ -10,7 +10,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Forms;
-use Filament\Forms\Get;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -94,7 +94,8 @@ class BannerResource extends Resource
                             ->required(),
                         Forms\Components\Select::make('article_id')
                             ->label('关联文章')
-                            ->options(fn () => Article::query()->orderByDesc('id')->limit(200)->pluck('title', 'id'))
+                            ->options(fn () => Article::query()->orderByDesc('id')->limit(200)->pluck('title',
+            'id'))
                             ->searchable()
                             ->visible(fn (Get $get) => $get('link_type') === Banner::LINK_ARTICLE),
                         Forms\Components\TextInput::make('url')
@@ -205,8 +206,9 @@ class BannerResource extends Resource
     {
         return [
             'index' => Pages\ListBanners::route('/'),
-            'view' => Pages\ViewBanner::route('/{record}'),
             'create' => Pages\CreateBanner::route('/create'),
+
+            'view' => Pages\ViewBanner::route('/{record}'),
             'edit' => Pages\EditBanner::route('/{record}/edit'),
         ];
     }

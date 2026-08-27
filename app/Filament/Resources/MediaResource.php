@@ -139,12 +139,13 @@ class MediaResource extends Resource
             ->filters([
                 SelectFilter::make('collection')
                     ->label('分组')
-                    ->options(fn () => Media::query()->distinct()->pluck('collection', 'collection')->filter()->all()),
+                    ->options(fn () => Media::query()->distinct()->pluck('collection',
+            'collection')->filter()->all()),
                 SelectFilter::make('kind')
                     ->label('类型')
                     ->options([
                         'image' => '图片',
-                        'document' => '文档',
+            'document' => '文档',
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         if (blank($data['value'] ?? null)) {
@@ -152,8 +153,12 @@ class MediaResource extends Resource
                         }
 
                         return $data['value'] === 'image'
-                            ? $query->where('mime_type', 'like', 'image/%')
-                            : $query->where('mime_type', 'not like', 'image/%');
+                            ? $query->where('mime_type',
+            'like',
+            'image/%')
+                            : $query->where('mime_type',
+            'not like',
+            'image/%');
                     }),
                 TrashedFilter::make()->label('回收站'),
             ])
@@ -172,7 +177,8 @@ class MediaResource extends Resource
             ])
             ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('created_at',
+            'desc');
     }
 
     public static function getRelations(): array
@@ -184,8 +190,9 @@ class MediaResource extends Resource
     {
         return [
             'index' => Pages\ListMedia::route('/'),
-            'view' => Pages\ViewMedia::route('/{record}'),
             'create' => Pages\CreateMedia::route('/create'),
+
+            'view' => Pages\ViewMedia::route('/{record}'),
             'edit' => Pages\EditMedia::route('/{record}/edit'),
         ];
     }

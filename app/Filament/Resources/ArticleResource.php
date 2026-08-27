@@ -56,7 +56,8 @@ class ArticleResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('category_id')
                             ->label('分类')
-                            ->relationship('category', 'name')
+                            ->relationship('category',
+            'name')
                             ->searchable()
                             ->preload()
                             ->createOptionForm([
@@ -110,9 +111,15 @@ class ArticleResource extends Resource
                             ->fileAttachmentsDirectory('rich-editor/'.now()->format('Ym'))
                             ->saveUploadedFileAttachmentUsing(self::richEditorSaveAttachmentCallback('public'))
                             ->toolbarButtons([
-                                'bold', 'italic', 'bulletList', 'orderedList',
-                                'link', 'blockquote', 'attachFiles',
-                                'undo', 'redo',
+                                'bold',
+            'italic',
+            'bulletList',
+            'orderedList',
+            'link',
+            'blockquote',
+            'attachFiles',
+            'undo',
+            'redo',
                             ]),
                     ]),
             ]);
@@ -174,7 +181,7 @@ class ArticleResource extends Resource
                     })
                     ->color(fn (string $state): string => match ($state) {
                         'published' => 'success',
-                        'offline' => 'gray',
+            'offline' => 'gray',
                         default => 'warning',
                     }),
                 TextColumn::make('views')->label('浏览数')->sortable()->alignEnd(),
@@ -189,7 +196,8 @@ class ArticleResource extends Resource
             ->filters([
                 SelectFilter::make('category_id')
                     ->label('分类')
-                    ->options(fn () => Category::pluck('name', 'id')->all()),
+                    ->options(fn () => Category::pluck('name',
+            'id')->all()),
                 SelectFilter::make('status')
                     ->label('状态')
                     ->options([
@@ -215,7 +223,8 @@ class ArticleResource extends Resource
             ])
             ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('created_at',
+            'desc');
     }
 
     public static function getRelations(): array
@@ -227,8 +236,9 @@ class ArticleResource extends Resource
     {
         return [
             'index' => Pages\ListArticles::route('/'),
-            'view' => Pages\ViewArticle::route('/{record}'),
             'create' => Pages\CreateArticle::route('/create'),
+
+            'view' => Pages\ViewArticle::route('/{record}'),
             'edit' => Pages\EditArticle::route('/{record}/edit'),
         ];
     }

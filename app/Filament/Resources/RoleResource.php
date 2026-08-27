@@ -8,8 +8,8 @@ use App\Support\MenuCascadeService;
 use App\Support\RolePresetTemplates;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
-use Filament\Forms\Get;
-use Filament\Forms\Set;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -97,7 +97,8 @@ class RoleResource extends Resource
                             ->schema([
                                 Forms\Components\CheckboxList::make('menus')
                                     ->label('分配菜单权限')
-                                    ->relationship('menus', 'name')
+                                    ->relationship('menus',
+            'name')
                                     ->options(fn () => app(MenuCascadeService::class)->getMenuOptions())
                                     ->columns(2)
                                     ->searchable()
@@ -145,9 +146,9 @@ class RoleResource extends Resource
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'super-admin' => 'danger',
-                        'admin' => 'warning',
-                        'editor' => 'info',
-                        'viewer' => 'gray',
+            'admin' => 'warning',
+            'editor' => 'info',
+            'viewer' => 'gray',
                         default => 'gray',
                     }),
                 TextColumn::make('menus_count')
@@ -171,9 +172,9 @@ class RoleResource extends Resource
                     ->label('角色标识')
                     ->options([
                         'super-admin' => '超级管理员',
-                        'admin' => '管理员',
-                        'editor' => '编辑',
-                        'viewer' => '访客',
+            'admin' => '管理员',
+            'editor' => '编辑',
+            'viewer' => '访客',
                     ]),
             ])
             ->recordActions([
@@ -243,7 +244,8 @@ class RoleResource extends Resource
             ])
             ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
-            ->defaultSort('id', 'asc');
+            ->defaultSort('id',
+            'asc');
     }
 
     /**
@@ -275,8 +277,9 @@ class RoleResource extends Resource
     {
         return [
             'index' => Pages\ListRoles::route('/'),
-            'view' => Pages\ViewRole::route('/{record}'),
             'create' => Pages\CreateRole::route('/create'),
+
+            'view' => Pages\ViewRole::route('/{record}'),
             'edit' => Pages\EditRole::route('/{record}/edit'),
         ];
     }
