@@ -44,7 +44,10 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: mbstring, intl, sqlite3, pdo_sqlite, pdo_mysql, bcmath, gd
+          # 必须覆盖 composer.lock 中声明的全部 ext-* 平台要求（如 ext-gmp / ext-curl /
+          # ext-dom / ext-zip 等），否则 setup-php 默认 PHP 缺扩展会导致 composer install
+          # 平台校验失败（Install dependencies 步骤崩溃，连带测试全被 skipped）。
+          extensions: mbstring, intl, sqlite3, pdo_sqlite, pdo_mysql, bcmath, gd, curl, dom, fileinfo, ftp, gmp, zip, xml, xmlwriter, tokenizer
           coverage: none
           tools: composer:v2
 
@@ -57,7 +60,10 @@ jobs:
             composer-${{ runner.os }}-
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-interaction --no-progress
+        # --no-scripts 跳过 post-autoload-dump 的 package:discover 等脚本，
+        # 避免其在 CI 受限环境下执行失败拖垮整个安装（vendor 残缺会连带后续步骤崩溃）。
+        # 测试 bootstrap 会自动重新发现包，不影响测试运行。
+        run: composer install --prefer-dist --no-interaction --no-progress --no-scripts
 
       - name: Prepare environment
         run: |
