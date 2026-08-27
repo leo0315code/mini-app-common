@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\SubscribeMessageFailureResource\Pages;
 use App\Models\SubscribeMessageFailure;
 use App\Services\WechatService;
+use App\Support\ExportsCsv;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -25,6 +26,8 @@ use Illuminate\Database\Eloquent\Collection;
 
 class SubscribeMessageFailureResource extends Resource
 {
+    use ExportsCsv;
+
     /** 业务级不可重试错误码（与 RetryFailedSubscribeMessages / Job 保持一致） */
     protected const NO_RETRY_CODES = [43101, 40037, 41030, 40003, -1, -2];
 
@@ -429,7 +432,82 @@ class SubscribeMessageFailureResource extends Resource
                         $this->tableFilters['resolved'] = ['value' => false];
                         $this->resetTable();
                     }),
+                self::buildExportAllHeaderAction(
+                    baseQuery: SubscribeMessageFailure::query(),
+                    columnMap: [
+                        'id' => 'ID',
+                        'scene_txt' => '场景',
+                        'openid' => 'OpenID',
+                        'subject' => '关联对象',
+                        'template_id' => '模板ID',
+                        'attempts' => '尝试次数',
+                        'last_errcode' => '错误码',
+                        'errmsg' => '错误信息',
+                        'status_txt' => '状态',
+                        'last_attempted_at_txt' => '最后尝试时间',
+                        'created_at_txt' => '创建时间',
+                    ],
+                    label: '导出全部失败记录',
+                    fileNamePrefix: 'subscribe-failures',
+                    rowCallback: static fn (SubscribeMessageFailure $f): array => [
+                        $f->id,
+                        match ((string) $f->scene) {
+                            'feedback_handled' => '反馈处理',
+                            'announcement_published' => '公告发布',
+                            'notification_published' => '站内通知',
+                            default => (string) $f->scene,
+                        },
+                        (string) $f->openid,
+                        $f->subject_type && $f->subject_id
+                            ? class_basename((string) $f->subject_type).'#'.$f->subject_id
+                            : '—',
+                        (string) $f->template_id,
+                        (int) $f->attempts,
+                        (string) ($f->last_errcode ?? ''),
+                        (string) $f->last_errmsg,
+                        $f->resolved_at ? '已解决' : '待处理',
+                        $f->last_attempted_at?->format('Y-m-d H:i:s') ?? '',
+                        $f->created_at?->format('Y-m-d H:i:s') ?? '',
+                    ],
+                ),
                 BulkActionGroup::make([
+                    self::buildExportSelectedBulkAction(
+                        columnMap: [
+                            'id' => 'ID',
+                            'scene_txt' => '场景',
+                            'openid' => 'OpenID',
+                            'subject' => '关联对象',
+                            'template_id' => '模板ID',
+                            'attempts' => '尝试次数',
+                            'last_errcode' => '错误码',
+                            'errmsg' => '错误信息',
+                            'status_txt' => '状态',
+                            'last_attempted_at_txt' => '最后尝试时间',
+                            'created_at_txt' => '创建时间',
+                        ],
+                        label: '导出所选',
+                        fileNamePrefix: 'subscribe-failures',
+                        rowCallback: static fn (SubscribeMessageFailure $f): array => [
+                            $f->id,
+                            match ((string) $f->scene) {
+                                'feedback_handled' => '反馈处理',
+                                'announcement_published' => '公告发布',
+                                'notification_published' => '站内通知',
+                                default => (string) $f->scene,
+                            },
+                            (string) $f->openid,
+                            $f->subject_type && $f->subject_id
+                                ? class_basename((string) $f->subject_type).'#'.$f->subject_id
+                                : '—',
+                            (string) $f->template_id,
+                            (int) $f->attempts,
+                            (string) ($f->last_errcode ?? ''),
+                            (string) $f->last_errmsg,
+                            $f->resolved_at ? '已解决' : '待处理',
+                            $f->last_attempted_at?->format('Y-m-d H:i:s') ?? '',
+                            $f->created_at?->format('Y-m-d H:i:s') ?? '',
+                        ],
+                    ),
                     BulkAction::make('bulkResend')
                         ->label('批量重发')
                         ->icon('heroicon-o-arrow-path')
