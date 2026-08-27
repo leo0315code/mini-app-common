@@ -219,6 +219,38 @@
     }
 }
 
+/* ---------- 弹窗内的 Section 弱化（长表单/详情弹窗观感） ----------
+   问题：弹窗本身已是卡片，内部多个 Section 各自带 Filament 默认重阴影
+   （0 25px 50px）+ 圆角 + 白底，内容多时「卡片叠卡片」臃肿混乱。
+   修复：弹窗上下文内 Section 去重阴影、白底与弹窗融合、细环微边界 +
+   紧凑 header，视觉从「多张卡片堆叠」变为「一张大纸上的分区」。
+   选择器用 .fi-modal-window-ctn > .fi-modal-window 前缀（0,3,0）压过 Filament 自带。 */
+.fi-modal-window-ctn > .fi-modal-window .fi-section:not(.fi-section-not-contained) {
+    @apply rounded-xl bg-white shadow-none ring-1 ring-gray-950/5;
+}
+
+/* 弹窗内 Section 内容区收窄内边距，长表单更紧凑 */
+.fi-modal-window-ctn > .fi-modal-window .fi-section:not(.fi-section-not-contained) .fi-section-content-ctn > .fi-section-content {
+    @apply px-4 py-4;
+}
+
+/* 弹窗内 Section header 紧凑化：更小的 padding + 分隔线淡化 */
+.fi-modal-window-ctn > .fi-modal-window .fi-section:not(.fi-section-not-contained) > .fi-section-header {
+    @apply px-4 py-3 border-b border-gray-100;
+}
+
+/* 弹窗内 Section 标题字号收紧，避免内容多时标题喧宾夺主 */
+.fi-modal-window-ctn > .fi-modal-window .fi-section-header-heading {
+    @apply text-base;
+}
+
+/* 弹窗内 infolist（详情弹窗）：3 列改 2 列 + 条目间距拉开。
+   内容多时 3 列太挤（1024px 下每列约 320px），2 列 + 行距 6 更从容可读 */
+.fi-modal-window-ctn > .fi-modal-window .fi-in-entry-has-inline-label {
+    @apply grid-cols-2 gap-x-6;
+    row-gap: calc(var(--spacing) * 6);
+}
+
 /* ---------- 顶栏 ---------- */
 .fi-topbar {
     @apply bg-white/80 backdrop-blur;
