@@ -4,15 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\Category;
+use App\Services\ArticleViewCounter;
 use App\Support\ContentCacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Redis;
 
 class ArticleController extends Controller
 {
     public function __construct(
         protected ContentCacheService $cache,
+        protected ArticleViewCounter $viewCounter,
     ) {}
 
     /**
@@ -68,7 +69,7 @@ class ArticleController extends Controller
 
         // 浏览数：Redis 原子自增（避免高并发下 MySQL 行锁热点），
         // 由 articles:sync-views 定时落库
-        Redis::incr(Article::VIEWS_COUNTER_PREFIX.$id);
+        $this->viewCounter->increment($id);
 
         return response()->json([
             'code' => 0,

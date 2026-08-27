@@ -59,7 +59,7 @@ class CmsTest extends TestCase
     }
 
     /**
-     * 已发布文章详情可访问；浏览数走 Redis 计数器（DB 不立即自增，
+     * 已发布文章详情可访问；浏览数走计数器服务（DB 不立即自增，
      * 由 articles:sync-views 定时落库）。
      */
     public function test_published_article_detail_increments_views(): void
@@ -69,8 +69,17 @@ class CmsTest extends TestCase
             'views' => 5,
         ]);
 
-        // 清理可能残留的 Redis 计数器，保证断言确定性
-        \Illuminate\Support\Facades\Redis::del(Article::VIEWS_COUNTER_PREFIX.$article->id);
+        // 内存计数器：断言详情访问触发了计数（不依赖真实 Redis）
+        $counter = new class extends \App\Services\ArticleViewCounter
+        {
+            public array $increments = [];
+
+            public function increment(int $articleId): void
+            {
+                $this->increments[] = $articleId;
+            }
+        };
+        $this->app->instance(\App\Services\ArticleViewCounter::class, $counter);
 
         $this->getJson('/api/articles/' . $article->id)
             ->assertOk()
@@ -82,10 +91,8 @@ class CmsTest extends TestCase
             'views' => 5,
         ]);
 
-        // Redis 计数器 +1
-        $this->assertSame(1, (int) \Illuminate\Support\Facades\Redis::get(
-            Article::VIEWS_COUNTER_PREFIX.$article->id,
-        ));
+        // 计数器服务被调用（记录了该文章 ID 的一次浏览）
+        $this->assertSame([$article->id], $counter->increments);
     }
 
     /**
