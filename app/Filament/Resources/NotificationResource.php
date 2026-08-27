@@ -251,6 +251,9 @@ class NotificationResource extends Resource
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make()
+                    ->requiresConfirmation()
+                    ->modalHeading('确认保存')
+                    ->modalDescription('若勾选「立即发布」且此前未推送，保存后将向所有接收人发送站内通知并推送微信订阅消息。请确认内容无误后再保存。')
                     ->after(function (array $data, $record): void {
                         /** @var \App\Models\Notification $record */
                         if ($record->published && ! $record->recipients()->exists()) {

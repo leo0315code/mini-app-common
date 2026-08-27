@@ -217,6 +217,9 @@ class AnnouncementResource extends Resource
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make()
+                    ->requiresConfirmation()
+                    ->modalHeading('确认保存')
+                    ->modalDescription('若本次保存后公告状态为「已发布」，将向全体订阅用户推送微信通知。请确认内容无误后再保存。')
                     ->after(function (array $data, $record): void {
                         /** @var \App\Models\Announcement $record */
                         $originalStatus = $record->getOriginal('status');

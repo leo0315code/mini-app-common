@@ -19,6 +19,9 @@ class ListAnnouncements extends ListRecords
     {
         return [
             Actions\CreateAction::make()
+                ->requiresConfirmation()
+                ->modalHeading('确认创建')
+                ->modalDescription('若状态为「已发布」，创建后将向全体订阅用户推送微信通知。请确认内容无误后再创建。')
                 ->after(function ($record): void {
                     /** @var \App\Models\Announcement $record */
                     if ($record->status === \App\Models\Announcement::STATUS_PUBLISHED) {

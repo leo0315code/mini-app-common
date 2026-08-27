@@ -39,6 +39,9 @@ class ListNotifications extends ListRecords
                         ->send();
                 }),
             Actions\CreateAction::make()
+                ->requiresConfirmation()
+                ->modalHeading('确认创建')
+                ->modalDescription('若勾选「立即发布」，创建后将向所有接收人发送站内通知并推送微信订阅消息。请确认内容无误后再创建。')
                 ->after(function ($record): void {
                     /** @var \App\Models\Notification $record */
                     if ($record->published) {

@@ -25,6 +25,11 @@ use Illuminate\Database\Eloquent\Collection;
 
 class SubscribeMessageFailureResource extends Resource
 {
+    /** 业务级不可重试错误码（与 RetryFailedSubscribeMessages / Job 保持一致） */
+    protected const NO_RETRY_CODES = [43101, 40037, 41030, 40003, -1, -2];
+
+    /** 自动重试上限（与 subscribe:retry-failed 默认 max-attempts 一致） */
+    protected const MAX_AUTO_RETRIES = 3;
 
     protected static ?string $model = SubscribeMessageFailure::class;
 
@@ -278,8 +283,46 @@ class SubscribeMessageFailureResource extends Resource
                 Tables\Columns\TextColumn::make('resolved_at')
                     ->label('状态')
                     ->badge()
-                    ->formatStateUsing(fn ($state): string => $state ? '已解决' : '待处理')
-                    ->color(fn ($state): string => $state ? 'success' : 'danger'),
+                    ->formatStateUsing(function ($state, $record): string {
+                        if ($record->resolved_at) {
+                            return '已解决';
+                        }
+
+                        // 不可重试的业务级错误码（用户拒收/模板无效等）→ 需人工处理
+                        if (in_array((int) ($record->last_errcode ?? 0), self::NO_RETRY_CODES, true)) {
+                            return '需人工处理';
+                        }
+
+                        return $record->attempts >= self::MAX_AUTO_RETRIES
+                            ? '重试耗尽'
+                            : '待自动重试';
+                    })
+                    ->color(fn ($state, $record): string => match (true) {
+                        $record->resolved_at => 'success',
+                        in_array((int) ($record->last_errcode ?? 0), self::NO_RETRY_CODES, true) => 'warning',
+                        $record->attempts >= self::MAX_AUTO_RETRIES => 'danger',
+                        default => 'info',
+                    })
+                    ->tooltip(function ($record): string {
+                        if ($record->resolved_at) {
+                            return '已解决'.($record->resolved_note ? '：'.$record->resolved_note : '');
+                        }
+
+                        if (in_array((int) ($record->last_errcode ?? 0), self::NO_RETRY_CODES, true)) {
+                            return '该错误为业务级不可重试（如用户取消订阅），需人工判断是否可修复后手动重发';
+                        }
+
+                        if ($record->attempts >= self::MAX_AUTO_RETRIES) {
+                            return '自动重试已达上限，需人工处理（可修复后手动重发）';
+                        }
+
+                        return sprintf(
+                            '将每 5 分钟自动重试，已重试 %d 次，剩余 %d 次机会',
+                            $record->attempts,
+                            max(0, self::MAX_AUTO_RETRIES - $record->attempts),
+                        );
+                    })
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('last_attempted_at')
                     ->label('最后尝试')
                     ->dateTime('Y-m-d H:i')

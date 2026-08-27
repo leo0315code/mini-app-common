@@ -69,6 +69,9 @@ class CmsTest extends TestCase
             'views' => 5,
         ]);
 
+        // 清理可能残留的 Redis 计数器，保证断言确定性
+        \Illuminate\Support\Facades\Redis::del(Article::VIEWS_COUNTER_PREFIX.$article->id);
+
         $this->getJson('/api/articles/' . $article->id)
             ->assertOk()
             ->assertJsonPath('data.id', $article->id);
