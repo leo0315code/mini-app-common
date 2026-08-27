@@ -305,7 +305,33 @@
     @apply bg-gradient-to-r from-brand-500/[0.04] to-accent-500/[0.04];
 }
 
-/* ---------- 可排序列头 hover（未排序态） ---------- */
+/* ---------- 批量操作条（选中行后出现的提示条）品牌化 ----------
+   默认 bg-gray-50 偏中性灰，改为品牌淡底 + 品牌描边，与选中行
+   (.fi-ta-row.fi-selected 品牌淡底) 呼应；内部 primary/danger 链接
+   沿用语义色（primary 已映射品牌渐变、danger 保留），不污染对比层级 */
+.fi-ta-selection-indicator {
+    @apply border-brand-500/15 bg-brand-500/[0.06];
+
+    /* 选中条左侧品牌竖条点睛，强化「已选中 N 项」锚点 */
+    @apply relative ps-3;
+
+    &::before {
+        content: '';
+        @apply absolute left-0 top-1/2 h-[1.1em] w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-brand-500 to-accent-500;
+    }
+
+    /* 计数文字（第 1 子节点）保留深色保证可读性 */
+    & > :nth-child(1) {
+        @apply text-gray-700;
+    }
+
+    /* 条内操作（全选/清除/批量动作）链接 hover 品牌色，与下拉菜单项同源 */
+    & .fi-ta-selection-indicator-actions-ctn .fi-link:not(.fi-color-danger):hover {
+        @apply text-brand-600;
+    }
+}
+
+
 /* 鼠标悬停/聚焦可排序列头时，整格上品牌色（图标+文字），与列表行/Tab hover 同源；
    已排序态由 Filament 保持灰黑高对比（.fi-ta-header-cell-sorted）不作处理 */
 .fi-ta-header-cell:not(.fi-ta-header-cell-sorted) {

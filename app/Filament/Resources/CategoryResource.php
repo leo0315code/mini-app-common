@@ -100,7 +100,8 @@ class CategoryResource extends Resource
                 TextColumn::make('articles_count')
                     ->label('文章数')
                     ->counts('articles')
-                    ->sortable(),
+                    ->sortable()
+                    ->alignEnd(),
                 TextColumn::make('created_at')->label('创建时间')
                     ->dateTime('Y-m-d H:i')->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])

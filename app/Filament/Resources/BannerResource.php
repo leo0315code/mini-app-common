@@ -150,7 +150,8 @@ class BannerResource extends Resource
                 TextColumn::make('title')
                     ->label('标题')
                     ->searchable()
-                    ->limit(30),
+                    ->limit(30)
+                    ->tooltip(fn ($record) => $record->title),
                 TextColumn::make('link')
                     ->label('跳转')
                     ->formatStateUsing(fn ($record) => match ($record->link_type) {

@@ -159,7 +159,7 @@ class ArticleResource extends Resource
                     ->size(44)
                     ->defaultImageUrl('https://ui-avatars.com/api/?name=N&background=random'),
                 TextColumn::make('id')->label('ID')->sortable()->toggleable(),
-                TextColumn::make('title')->label('标题')->searchable()->limit(40),
+                TextColumn::make('title')->label('标题')->searchable()->limit(40)->tooltip(fn ($record) => $record->title),
                 TextColumn::make('category.name')->label('分类')
                     ->formatStateUsing(fn ($state, $record) => $record->category?->name ?? '—'),
                 IconColumn::make('is_top')->label('置顶')->boolean(),
@@ -177,7 +177,7 @@ class ArticleResource extends Resource
                         'offline' => 'gray',
                         default => 'warning',
                     }),
-                TextColumn::make('views')->label('浏览数')->sortable(),
+                TextColumn::make('views')->label('浏览数')->sortable()->alignEnd(),
                 TextColumn::make('author.name')
                     ->label('作者')
                     ->formatStateUsing(fn ($state, $record) => $record->author?->name ?? '—'),

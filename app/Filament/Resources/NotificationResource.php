@@ -191,7 +191,8 @@ class NotificationResource extends Resource
                 TextColumn::make('recipients_count')
                     ->label('接收人数')
                     ->counts('recipients')
-                    ->sortable(),
+                    ->sortable()
+                    ->alignEnd(),
                 TextColumn::make('read_rate')
                     ->label('已读率')
                     ->state(fn (Notification $record): string => (function () use ($record) {
@@ -204,7 +205,8 @@ class NotificationResource extends Resource
                         return round($read / $total * 100) . '%';
                     })())
                     ->badge()
-                    ->color(fn (string $state): string => $state === '—' ? 'gray' : (str_starts_with($state, '100') ? 'success' : 'info')),
+                    ->color(fn (string $state): string => $state === '—' ? 'gray' : (str_starts_with($state, '100') ? 'success' : 'info'))
+                    ->alignEnd(),
                 IconColumn::make('published')
                     ->label('已发布')
                     ->boolean()

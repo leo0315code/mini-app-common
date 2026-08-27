@@ -104,7 +104,8 @@ class MediaResource extends Resource
                 TextColumn::make('file_name')
                     ->label('文件名')
                     ->searchable()
-                    ->limit(30),
+                    ->limit(30)
+                    ->tooltip(fn (Media $record): string => $record->file_name),
                 TextColumn::make('collection')
                     ->label('分组')
                     ->badge()

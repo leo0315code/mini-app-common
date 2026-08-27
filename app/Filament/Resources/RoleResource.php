@@ -153,11 +153,13 @@ class RoleResource extends Resource
                 TextColumn::make('menus_count')
                     ->label('菜单权限')
                     ->counts('menus')
-                    ->sortable(),
+                    ->sortable()
+                    ->alignEnd(),
                 TextColumn::make('users_count')
                     ->label('成员数')
                     ->counts('users')
-                    ->sortable(),
+                    ->sortable()
+                    ->alignEnd(),
                 TextColumn::make('created_at')
                     ->label('创建时间')
                     ->dateTime('Y-m-d H:i')

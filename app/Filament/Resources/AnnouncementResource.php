@@ -139,7 +139,8 @@ class AnnouncementResource extends Resource
                 TextColumn::make('title')
                     ->label('标题')
                     ->searchable()
-                    ->limit(40),
+                    ->limit(40)
+                    ->tooltip(fn ($record) => $record->title),
                 TextColumn::make('type')
                     ->label('类型')
                     ->badge()

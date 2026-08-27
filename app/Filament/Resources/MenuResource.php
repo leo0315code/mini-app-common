@@ -157,7 +157,8 @@ class MenuResource extends Resource
                 TextColumn::make('roles_count')
                     ->label('分配角色')
                     ->counts('roles')
-                    ->sortable(),
+                    ->sortable()
+                    ->alignEnd(),
                 TextColumn::make('created_at')
                     ->label('创建时间')
                     ->dateTime('Y-m-d H:i')

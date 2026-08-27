@@ -130,7 +130,8 @@ class AuditLogResource extends Resource
                     ->label('操作')
                     ->limit(40)
                     ->searchable()
-                    ->toggleable(),
+                    ->toggleable()
+                    ->tooltip(fn ($record) => $record->action),
                 TextColumn::make('user.name')
                     ->label('操作人')
                     ->formatStateUsing(fn ($state, $record) => $record->user?->name ?? $record->user?->nickname ?? '系统'),
