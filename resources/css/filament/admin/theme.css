@@ -502,9 +502,12 @@
 .fi-modal-window-ctn > .fi-modal-window .fi-modal-content {
     @apply min-h-0 flex-1 overflow-y-auto;
 
-    /* 覆盖 Filament 自带 margin-bottom:-6：短表单时让内容与常驻 footer 拉开呼吸感，
-       长表单时滚动区独立裁切不受影响 */
-    @apply pb-6;
+    /* 覆盖 Filament 自带负 margin（*-inline:-6 / *-top:-6 / *-bottom:-6）：
+       本意是让内容贴边到 header/footer 圆角；但内容区已改作独立滚动容器，
+       负 margin-top 会让表单钻到常驻 header 分隔线下方、负 margin-inline 在滚动容器
+       内易触发横向滚动条/左右裁切。全部清零，内容与 header/footer 平齐衔接。
+       （pb-6 在底部仍保留一点呼吸感，不与 footer 粘连） */
+    @apply mx-0 mt-0 mb-6;
 
     /* 内容区细滚动条：与侧栏/表格滚动条同源，避免默认粗条破坏品牌观感 */
     scrollbar-width: thin;
@@ -711,6 +714,21 @@
     }
 }
 
+/* 2.1) 列表内表格搜索框：与顶栏全局搜索同源，避免工具栏内搜索/列切换区割裂。
+   包裹层 .fi-ta-search-field 接管品牌淡底 + focus 品牌环，内部 .fi-input 透明 */
+.fi-ta-search-field {
+    @apply rounded-lg bg-brand-500/[0.04] ring-1 ring-brand-500/15 transition duration-75;
+
+    &:focus-within {
+        @apply bg-brand-500/[0.08] ring-2 ring-brand-500/30;
+    }
+
+    & .fi-input-wrp,
+    & .fi-input {
+        @apply bg-transparent;
+    }
+}
+
 /* 3) 中性灰次级按钮（取消/关闭等）：hover 品牌淡底 + 品牌字，与筛选激活态同源 */
 .fi-btn.fi-color.fi-color-gray:not(.fi-outlined) {
     @apply hover:bg-brand-500/[0.07] focus-visible:bg-brand-500/[0.07];
@@ -729,5 +747,47 @@
     &:hover > .fi-icon,
     &:focus-visible > .fi-icon {
         @apply text-brand-600;
+    }
+}
+
+/* ==================== 通知 Toast（全局最高频可见，此前零品牌化） ==================== */
+/* 根：白底卡片 + 强化圆角阴影 + 左侧品牌渐变强调条（与统计卡/弹窗渐变语同源）。
+   不覆盖 Filament 的颜色系统（success/danger/warning 仍有各自辨识度），
+   仅注入外壳品牌暗示；并补负 margin 消除条目间 1px 缝隙导致的割裂观感。 */
+.fi-no-notification {
+    @apply relative overflow-hidden rounded-xl border-0 bg-white shadow-lg ring-1 ring-gray-950/5;
+
+    /* 左侧品牌渐变强调条 */
+    &::before {
+        content: '';
+        @apply absolute inset-y-0 left-0 z-[1] block w-1 bg-gradient-to-b from-brand-500 to-accent-500;
+    }
+
+    /* 内容左移给强调条留白 */
+    @apply pl-1;
+}
+
+/* 关闭按钮：与弹窗关闭按钮(.fi-modal-close-btn)同源 —— hover 品牌淡底 + 品牌图标 */
+.fi-no-notification-close-btn {
+    @apply rounded-md transition duration-150 hover:bg-brand-500/[0.08];
+
+    &:hover > .fi-icon,
+    &:focus-visible > .fi-icon {
+        @apply text-brand-600;
+    }
+}
+
+/* 图标：默认灰色(fi-color-gray)未指定语义色时，提亮为品牌青，
+   让中性通知也带品牌暗示（success/danger/warning 等语义色由 Filament 保留） */
+.fi-no-notification.fi-color-gray .fi-no-notification-icon {
+    @apply text-brand-600;
+}
+
+/* 数据库通知面板（铃铛下拉里的 inline 列表）同样品牌化强调条与卡片 */
+.fi-no-notification.fi-inline {
+    @apply bg-white/0 ring-0 shadow-none;
+
+    &::before {
+        @apply bg-gradient-to-b from-brand-500 to-accent-500;
     }
 }
