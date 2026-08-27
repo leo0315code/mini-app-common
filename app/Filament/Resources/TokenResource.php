@@ -11,6 +11,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\ViewAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Tables\Columns\TextColumn;
@@ -112,6 +113,7 @@ class TokenResource extends Resource
                     ->query(fn (Builder $query, array $data) => $query->when($data['value'], fn ($q, $v) => $q->where('tokenable_id', $v))),
             ])
             ->recordActions([
+                ViewAction::make(),
                 DeleteAction::make()
                     ->label('踢下线')
                     ->icon('heroicon-o-no-symbol')
@@ -142,7 +144,6 @@ class TokenResource extends Resource
     {
         return [
             'index' => Pages\ListTokens::route('/'),
-            'view' => Pages\ViewToken::route('/{record}'),
         ];
     }
 }

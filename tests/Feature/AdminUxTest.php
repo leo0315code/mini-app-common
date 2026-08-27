@@ -2,13 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Filament\Resources\FeedbackResource;
+use App\Filament\Resources\FeedbackResource\Pages\ListFeedback;
 use App\Filament\Resources\MediaResource;
+use App\Filament\Resources\NotificationResource\Pages\ListNotifications;
 use App\Models\Feedback;
 use App\Models\Media;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AdminUxTest extends TestCase
@@ -120,7 +122,6 @@ class AdminUxTest extends TestCase
 
         $pages = [
             route('filament.admin.resources.feedback.index'),
-            route('filament.admin.resources.feedback.view', ['record' => $feedback->getKey()]),
             route('filament.admin.resources.notifications.index'),
             route('filament.admin.resources.media.index'),
         ];
@@ -129,10 +130,15 @@ class AdminUxTest extends TestCase
             $this->actingAs($admin)->get($url)->assertOk();
         }
 
-        // 通知详情页（edit 路由用于管理）
-        $this->actingAs($admin)
-            ->get(route('filament.admin.resources.notifications.edit', ['record' => $notification->getKey()]))
-            ->assertOk();
+        // 反馈详情弹窗（弹窗化后无独立 view 路由）
+        Livewire::test(ListFeedback::class)
+            ->assertTableActionExists('view');
+        Livewire::test(ListFeedback::class)->mountTableAction('view', $feedback->getKey());
+
+        // 通知编辑弹窗（弹窗化后无独立 edit 路由）
+        Livewire::test(ListNotifications::class)
+            ->assertTableActionExists('edit');
+        Livewire::test(ListNotifications::class)->mountTableAction('edit', $notification->getKey());
     }
 
     /**

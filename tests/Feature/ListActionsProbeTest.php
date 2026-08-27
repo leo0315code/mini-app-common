@@ -2,6 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\AnnouncementResource\Pages\ListAnnouncements;
+use App\Filament\Resources\ArticleResource\Pages\ListArticles;
+use App\Filament\Resources\CategoryResource\Pages\ListCategories;
+use App\Filament\Resources\MediaResource\Pages\ListMedia;
+use App\Filament\Resources\NotificationResource\Pages\ListNotifications;
 use App\Models\Announcement;
 use App\Models\Article;
 use App\Models\Category;
@@ -9,11 +14,12 @@ use App\Models\Media;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
- * 探测各业务资源列表页是否渲染出「新增」与「编辑」入口，
- * 用以验证 Filament v5 Section 命名空间修复后 Create/Edit action 是否正常。
+ * 弹窗化后，新增=header action、编辑/详情=table action，列表 HTML 不再包含
+ * /create、/edit 链接。改用 Livewire 断言这些 action 已挂载且弹窗可渲染。
  */
 class ListActionsProbeTest extends TestCase
 {
@@ -30,44 +36,46 @@ class ListActionsProbeTest extends TestCase
         return $user;
     }
 
-    private function assertListHasCreateAndEdit(string $listUrl, string $createUrl): void
+    /**
+     * @param class-string $listClass
+     */
+    private function assertListModalActions(string $listClass, int $recordId): void
     {
-        $html = $this->actingAs($this->admin())
-            ->get($listUrl)
-            ->assertOk()
-            ->getContent();
+        $this->actingAs($this->admin());
 
-        $this->assertStringContainsString($createUrl, $html, "列表页缺少「新增」入口：{$listUrl}");
-        $this->assertMatchesRegularExpression('#/console/[^/]+/\d+/edit#', $html, "列表页缺少「编辑」入口：{$listUrl}");
+        Livewire::test($listClass)
+            
+            ->assertActionExists('create')
+            ->assertTableActionExists('view')
+            ->assertTableActionExists('edit');
+
+        // 详情/编辑弹窗可挂载渲染（组件树 snapshot 校验）
+        Livewire::test($listClass)->mountTableAction('view', $recordId);
+        Livewire::test($listClass)->mountTableAction('edit', $recordId);
     }
 
-    public function test_article_list_has_create_and_edit(): void
+    public function test_article_list_modal_actions(): void
     {
-        Article::factory()->count(2)->create();
-        $this->assertListHasCreateAndEdit('/console/articles', '/console/articles/create');
+        $this->assertListModalActions(ListArticles::class, Article::factory()->create()->getKey());
     }
 
-    public function test_category_list_has_create_and_edit(): void
+    public function test_category_list_modal_actions(): void
     {
-        Category::factory()->count(2)->create();
-        $this->assertListHasCreateAndEdit('/console/categories', '/console/categories/create');
+        $this->assertListModalActions(ListCategories::class, Category::factory()->create()->getKey());
     }
 
-    public function test_announcement_list_has_create_and_edit(): void
+    public function test_announcement_list_modal_actions(): void
     {
-        Announcement::factory()->count(2)->create();
-        $this->assertListHasCreateAndEdit('/console/announcements', '/console/announcements/create');
+        $this->assertListModalActions(ListAnnouncements::class, Announcement::factory()->create()->getKey());
     }
 
-    public function test_notification_list_has_create_and_edit(): void
+    public function test_notification_list_modal_actions(): void
     {
-        Notification::factory()->count(2)->create();
-        $this->assertListHasCreateAndEdit('/console/notifications', '/console/notifications/create');
+        $this->assertListModalActions(ListNotifications::class, Notification::factory()->create()->getKey());
     }
 
-    public function test_media_list_has_create_and_edit(): void
+    public function test_media_list_modal_actions(): void
     {
-        Media::factory()->count(2)->create();
-        $this->assertListHasCreateAndEdit('/console/media', '/console/media/create');
+        $this->assertListModalActions(ListMedia::class, Media::factory()->create()->getKey());
     }
 }

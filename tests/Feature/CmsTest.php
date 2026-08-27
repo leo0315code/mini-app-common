@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\ArticleResource\Pages\ListArticles;
+use App\Filament\Resources\CategoryResource\Pages\ListCategories;
 use App\Models\Article;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class CmsTest extends TestCase
@@ -112,7 +115,7 @@ class CmsTest extends TestCase
     }
 
     /**
-     * 后台文章编辑页可渲染（form 使用 Schemas\Components\Section）。
+     * 后台文章编辑弹窗可渲染（form 使用 Schemas\Components\Section，弹窗化后无独立 edit 路由）。
      */
     public function test_admin_can_edit_article(): void
     {
@@ -120,13 +123,16 @@ class CmsTest extends TestCase
         $articles = Article::factory()->count(3)->create();
         $target = $articles->last();
 
-        $this->actingAs($admin)
-            ->get('/console/articles/' . $target->id . '/edit')
-            ->assertOk();
+        $this->actingAs($admin);
+
+        Livewire::test(ListArticles::class)
+            ->assertTableActionExists('edit');
+
+        Livewire::test(ListArticles::class)->mountTableAction('edit', $target->id);
     }
 
     /**
-     * 后台分类编辑页可渲染（同样使用 Schemas\Components\Section）。
+     * 后台分类编辑弹窗可渲染（同样使用 Schemas\Components\Section）。
      */
     public function test_admin_can_edit_category(): void
     {
@@ -134,9 +140,12 @@ class CmsTest extends TestCase
         $categories = Category::factory()->count(2)->create();
         $target = $categories->last();
 
-        $this->actingAs($admin)
-            ->get('/console/categories/' . $target->id . '/edit')
-            ->assertOk();
+        $this->actingAs($admin);
+
+        Livewire::test(ListCategories::class)
+            ->assertTableActionExists('edit');
+
+        Livewire::test(ListCategories::class)->mountTableAction('edit', $target->id);
     }
 
     /**

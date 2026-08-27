@@ -2,16 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\Announcement;
-use App\Models\Article;
-use App\Models\Banner;
+use App\Filament\Resources\CategoryResource\Pages\ListCategories;
 use App\Models\Category;
-use App\Models\Media;
-use App\Models\Menu;
-use App\Models\Notification;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class CategoryCreateProbeTest extends TestCase
@@ -28,36 +24,21 @@ class CategoryCreateProbeTest extends TestCase
         return $admin;
     }
 
-    public function test_create_routes_resolve_not_404(): void
+    /**
+     * 验证分类的新建改为弹窗（header action）后：
+     * 1) 列表页可正常渲染；2) create header action 已挂载；3) 弹窗可挂载渲染无异常。
+     * 不再有独立 /console/categories/create 页面（弹窗化后该路由删除）。
+     */
+    public function test_category_create_is_modal(): void
     {
         $this->makeAdmin();
-        $this->withoutExceptionHandling();
 
-        // 含 create 页的资源：create 必须 200，不能因 /{record} 抢占而 404
-        $creatable = [
-            'console/announcements' => fn () => Announcement::factory()->create(),
-            'console/articles' => fn () => Article::factory()->create(),
-            'console/banners' => fn () => Banner::factory()->create(),
-            'console/categories' => fn () => Category::factory()->create(),
-            'console/media' => fn () => Media::factory()->create(),
-            'console/menus' => fn () => Menu::create(['name' => '测试菜单', 'slug' => 'tm-' . uniqid()]),
-            'console/notifications' => fn () => Notification::factory()->create(),
-            'console/roles' => fn () => Role::factory()->create(),
-        ];
+        $test = Livewire::test(ListCategories::class)
+            
+            ->assertActionExists('create');
 
-        foreach ($creatable as $base => $factory) {
-            $factory();
-            $resp = $this->get("/{$base}/create");
-            if ($resp->getStatusCode() !== 200) {
-                fwrite(STDERR, "\n[probe][{$base}/create] status={$resp->getStatusCode()}\n");
-                fwrite(STDERR, "[probe][body] " . strip_tags(substr($resp->getContent(), 0, 600)) . "\n");
-            }
-            $this->assertSame(
-                200,
-                $resp->getStatusCode(),
-                "FAIL create {$base}/create (应为 200, 误判为 404 说明 /{record} 抢占路由)"
-            );
-        }
+        // 触发新建弹窗渲染（form 组件树 snapshot 校验）
+        Livewire::test(ListCategories::class)->mountAction('create');
 
         $this->assertTrue(true);
     }

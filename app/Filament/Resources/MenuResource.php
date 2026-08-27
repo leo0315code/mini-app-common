@@ -13,6 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -173,6 +174,7 @@ class MenuResource extends Resource
                     ->label('侧边栏显示'),
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make(),
             ])
@@ -181,8 +183,8 @@ class MenuResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
+
             ->defaultSort('sort_order',
             'asc');
     }
@@ -196,10 +198,6 @@ class MenuResource extends Resource
     {
         return [
             'index' => Pages\ListMenus::route('/'),
-            'create' => Pages\CreateMenu::route('/create'),
-
-            'view' => Pages\ViewMenu::route('/{record}'),
-            'edit' => Pages\EditMenu::route('/{record}/edit'),
         ];
     }
 }

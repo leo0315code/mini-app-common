@@ -10,6 +10,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
@@ -214,7 +215,22 @@ class AnnouncementResource extends Resource
                 TrashedFilter::make()->label('回收站'),
             ])
             ->recordActions([
-                EditAction::make(),
+                ViewAction::make(),
+                EditAction::make()
+                    ->after(function (array $data, $record): void {
+                        /** @var \App\Models\Announcement $record */
+                        $originalStatus = $record->getOriginal('status');
+                        if (
+                            $record->status === \App\Models\Announcement::STATUS_PUBLISHED
+                            && $originalStatus !== \App\Models\Announcement::STATUS_PUBLISHED
+                        ) {
+                            try {
+                                app(\App\Services\SubscribeMessageService::class)->pushAnnouncementPublished($record);
+                            } catch (\Throwable $e) {
+                                // 忽略推送异常，业务流程不受影响
+                            }
+                        }
+                    }),
                 DeleteAction::make(),
                 RestoreAction::make(),
                 ForceDeleteAction::make(),
@@ -226,8 +242,8 @@ class AnnouncementResource extends Resource
                     ForceDeleteBulkAction::make(),
                 ]),
             ])
-            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
+
             ->defaultSort('created_at',
             'desc');
     }
@@ -241,10 +257,6 @@ class AnnouncementResource extends Resource
     {
         return [
             'index' => Pages\ListAnnouncements::route('/'),
-            'create' => Pages\CreateAnnouncement::route('/create'),
-
-            'view' => Pages\ViewAnnouncement::route('/{record}'),
-            'edit' => Pages\EditAnnouncement::route('/{record}/edit'),
         ];
     }
 

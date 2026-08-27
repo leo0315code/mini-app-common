@@ -38,7 +38,18 @@ class ListNotifications extends ListRecords
                         ->title($count > 0 ? "已将 {$count} 条通知标记为已读" : '没有未读通知')
                         ->send();
                 }),
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->after(function ($record): void {
+                    /** @var \App\Models\Notification $record */
+                    if ($record->published) {
+                        $record->dispatchToRecipients();
+                        try {
+                            app(\App\Services\SubscribeMessageService::class)->pushNotificationPublished($record);
+                        } catch (\Throwable $e) {
+                            // 忽略推送异常，业务流程不受影响
+                        }
+                    }
+                }),
         ];
     }
 }

@@ -445,8 +445,8 @@ class SubscribeMessageFailureResource extends Resource
                 ]),
             ])
             ->recordClasses(fn (SubscribeMessageFailure $record): ?string => $record->resolved_at === null ? 'fi-ta-row-danger' : null)
-            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
+
             ->defaultSort('created_at', 'desc');
     }
 
@@ -454,7 +454,6 @@ class SubscribeMessageFailureResource extends Resource
     {
         return [
             'index' => Pages\ListSubscribeMessageFailures::route('/'),
-            'view' => Pages\ViewSubscribeMessageFailure::route('/{record}'),
         ];
     }
 

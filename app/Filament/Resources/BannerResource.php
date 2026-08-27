@@ -7,6 +7,7 @@ use App\Models\Article;
 use App\Models\Banner;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Forms;
@@ -188,6 +189,7 @@ class BannerResource extends Resource
                     ->label('启用状态'),
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make(),
             ])
@@ -196,9 +198,7 @@ class BannerResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
-            ->defaultSort('sort_order')
             ->reorderable('sort_order');
     }
 
@@ -206,10 +206,6 @@ class BannerResource extends Resource
     {
         return [
             'index' => Pages\ListBanners::route('/'),
-            'create' => Pages\CreateBanner::route('/create'),
-
-            'view' => Pages\ViewBanner::route('/{record}'),
-            'edit' => Pages\EditBanner::route('/{record}/edit'),
         ];
     }
 }

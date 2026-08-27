@@ -10,6 +10,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
@@ -209,6 +210,7 @@ class ArticleResource extends Resource
                 TrashedFilter::make()->label('回收站'),
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make(),
                 RestoreAction::make(),
@@ -221,8 +223,8 @@ class ArticleResource extends Resource
                     ForceDeleteBulkAction::make(),
                 ]),
             ])
-            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
+
             ->defaultSort('created_at',
             'desc');
     }
@@ -236,10 +238,6 @@ class ArticleResource extends Resource
     {
         return [
             'index' => Pages\ListArticles::route('/'),
-            'create' => Pages\CreateArticle::route('/create'),
-
-            'view' => Pages\ViewArticle::route('/{record}'),
-            'edit' => Pages\EditArticle::route('/{record}/edit'),
         ];
     }
 

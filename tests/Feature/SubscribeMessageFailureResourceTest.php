@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\SubscribeMessageFailureResource\Pages\ListSubscribeMessageFailures;
 use App\Models\Role;
 use App\Models\SubscribeMessageFailure;
 use App\Models\User;
 use App\Services\WechatService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Livewire\Livewire;
 use Mockery;
 use Tests\TestCase;
 
@@ -71,25 +73,31 @@ class SubscribeMessageFailureResourceTest extends TestCase
     }
 
     /**
-     * 超级管理员可以访问失败记录详情页
+     * 超级管理员可以打开失败记录详情弹窗（弹窗化后无独立 view 路由）
      */
     public function test_super_admin_can_access_view(): void
     {
         $failure = $this->makeFailure();
 
-        $this->actingAs($this->superAdmin())
-            ->get("/console/subscribe-message-failures/{$failure->id}")
-            ->assertStatus(200);
+        $this->actingAs($this->superAdmin());
+
+        Livewire::test(ListSubscribeMessageFailures::class)
+            
+            ->assertTableActionExists('view');
+
+        Livewire::test(ListSubscribeMessageFailures::class)
+            ->mountTableAction('view', $failure->id);
     }
 
     /**
-     * 超级管理员不可创建失败记录（canCreate = false，且路由未注册返回404）
+     * 超级管理员不可创建失败记录（无 create header action）
      */
     public function test_cannot_create_failure(): void
     {
-        $this->actingAs($this->superAdmin())
-            ->get('/console/subscribe-message-failures/create')
-            ->assertStatus(404);
+        $this->actingAs($this->superAdmin());
+
+        Livewire::test(ListSubscribeMessageFailures::class)
+            ->assertActionDoesNotExist('create');
     }
 
     /**

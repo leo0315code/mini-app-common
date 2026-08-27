@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\ExportsCsv;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Forms;
@@ -248,7 +249,21 @@ class NotificationResource extends Resource
                     ->query(fn (Builder $query, array $data) => $query->when($data['value'], fn ($q, $v) => $q->whereHas('recipients', fn (Builder $q) => $q->where('user_id', $v)))),
             ])
             ->recordActions([
-                EditAction::make(),
+                ViewAction::make(),
+                EditAction::make()
+                    ->after(function (array $data, $record): void {
+                        /** @var \App\Models\Notification $record */
+                        if ($record->published && ! $record->recipients()->exists()) {
+                            $record->dispatchToRecipients();
+                        }
+                        if ($record->published && ! $record->subscribe_sent) {
+                            try {
+                                app(\App\Services\SubscribeMessageService::class)->pushNotificationPublished($record);
+                            } catch (\Throwable $e) {
+                                // 忽略推送异常，业务流程不受影响
+                            }
+                        }
+                    }),
                 DeleteAction::make(),
             ])
             ->toolbarActions([
@@ -334,8 +349,8 @@ class NotificationResource extends Resource
                 ]),
             ])
             ->recordClasses(fn (Notification $record): ?string => $record->published ? null : 'fi-ta-row-unpublished')
-            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
+
             ->defaultSort('created_at',
             'desc');
     }
@@ -349,10 +364,6 @@ class NotificationResource extends Resource
     {
         return [
             'index' => Pages\ListNotifications::route('/'),
-            'create' => Pages\CreateNotification::route('/create'),
-
-            'view' => Pages\ViewNotification::route('/{record}'),
-            'edit' => Pages\EditNotification::route('/{record}/edit'),
         ];
     }
 

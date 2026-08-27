@@ -2,6 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\AnnouncementResource\Pages\ListAnnouncements;
+use App\Filament\Resources\ArticleResource\Pages\ListArticles;
+use App\Filament\Resources\AuditLogResource\Pages\ListAuditLogs;
+use App\Filament\Resources\BannerResource\Pages\ListBanners;
+use App\Filament\Resources\CategoryResource\Pages\ListCategories;
+use App\Filament\Resources\FeedbackResource\Pages\ListFeedback;
+use App\Filament\Resources\MediaResource\Pages\ListMedia;
+use App\Filament\Resources\MenuResource\Pages\ListMenus;
+use App\Filament\Resources\NotificationResource\Pages\ListNotifications;
+use App\Filament\Resources\RoleResource\Pages\ListRoles;
+use App\Filament\Resources\SubscribeMessageFailureResource\Pages\ListSubscribeMessageFailures;
+use App\Filament\Resources\TokenResource\Pages\ListTokens;
+use App\Filament\Resources\UserResource\Pages\ListUsers;
 use App\Models\Announcement;
 use App\Models\Article;
 use App\Models\AuditLog;
@@ -15,7 +28,7 @@ use App\Models\Role;
 use App\Models\SubscribeMessageFailure;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\PersonalAccessToken;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class ResourcesViewRenderTest extends TestCase
@@ -32,39 +45,50 @@ class ResourcesViewRenderTest extends TestCase
         return $admin;
     }
 
-    public function test_all_view_pages_render(): void
+    /**
+     * 全部 13 个 Resource 的列表页 + 详情弹窗(view table action) 渲染零异常。
+     * 同时校验 create header action 与 edit/view table action 已挂载（弹窗化标志）。
+     */
+    public function test_all_resources_modalized(): void
     {
         $this->actingAsAdmin();
 
         $cases = [
-            'console/announcements' => fn () => Announcement::factory()->create(),
-            'console/articles' => fn () => Article::factory()->create(),
-            'console/banners' => fn () => Banner::factory()->create(),
-            'console/categories' => fn () => Category::factory()->create(),
-            'console/media' => fn () => Media::factory()->create(),
-            'console/menus' => fn () => Menu::create(['name' => '测试菜单', 'slug' => 'test-menu-' . uniqid()]),
-            'console/notifications' => fn () => Notification::factory()->create(),
-            'console/roles' => fn () => Role::factory()->create(),
-            'console/tokens' => fn () => User::factory()->create()->createToken('t')->accessToken,
-            'console/users' => fn () => User::factory()->create(),
-            'console/audit-logs' => fn () => AuditLog::query()->create(['user_id' => User::factory()->create()->id, 'module' => 'user', 'type' => 'update', 'description' => 'x']),
-            'console/feedback' => fn () => Feedback::factory()->create(),
-            'console/subscribe-message-failures' => fn () => SubscribeMessageFailure::factory()->create(),
+            'announcements' => [ListAnnouncements::class, fn () => Announcement::factory()->create(), true],
+            'articles' => [ListArticles::class, fn () => Article::factory()->create(), true],
+            'audit-logs' => [ListAuditLogs::class, fn () => AuditLog::query()->create(['user_id' => User::factory()->create()->id, 'module' => 'user', 'type' => 'update', 'description' => 'x']), false],
+            'banners' => [ListBanners::class, fn () => Banner::factory()->create(), true],
+            'categories' => [ListCategories::class, fn () => Category::factory()->create(), true],
+            'feedback' => [ListFeedback::class, fn () => Feedback::factory()->create(), false],
+            'media' => [ListMedia::class, fn () => Media::factory()->create(), true],
+            'menus' => [ListMenus::class, fn () => Menu::create(['name' => '测试菜单', 'slug' => 'tm-' . uniqid()]), true],
+            'notifications' => [ListNotifications::class, fn () => Notification::factory()->create(), true],
+            'roles' => [ListRoles::class, fn () => Role::factory()->create(), true],
+            'subscribe-message-failures' => [ListSubscribeMessageFailures::class, fn () => SubscribeMessageFailure::factory()->create(), false],
+            'tokens' => [ListTokens::class, fn () => User::factory()->create()->createToken('t')->accessToken, false],
+            'users' => [ListUsers::class, fn () => User::factory()->create(), true],
         ];
 
-        foreach ($cases as $base => $factory) {
+        foreach ($cases as $key => [$listClass, $factory, $creatable]) {
             $record = $factory();
-            $id = $record instanceof PersonalAccessToken ? $record->getKey() : $record->getKey();
-            // 刷新让关联计数等闭包可正常取数
-            if (method_exists($record, 'refresh')) {
-                $record->refresh();
+            $id = $record->getKey();
+
+            $test = Livewire::test($listClass)
+                
+                ->assertTableActionExists('view');
+
+            if ($creatable) {
+                $test->assertTableActionExists('edit');
+                $test->assertActionExists('create');
             }
-            $url = "/{$base}/{$id}";
-            $resp = $this->get($url);
-            $this->assertSame(200, $resp->getStatusCode(), "FAIL render {$url}");
-            // 取响应文本，确认含详情标记（任意字段 label）
-            $text = $resp->getContent();
-            $this->assertNotEmpty($text, "empty body {$url}");
+
+            // 触发详情弹窗渲染（infolist 组件树会在此 snapshot 校验，任何闭包错误都会抛出）
+            Livewire::test($listClass)->mountTableAction('view', $id);
+
+            // 编辑弹窗渲染（form 组件树校验）
+            if ($creatable) {
+                Livewire::test($listClass)->mountTableAction('edit', $id);
+            }
         }
 
         $this->assertTrue(true);

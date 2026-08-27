@@ -19,6 +19,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -178,6 +179,7 @@ class RoleResource extends Resource
                     ]),
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
                 Action::make('clone')
                     ->label('克隆')
@@ -242,8 +244,8 @@ class RoleResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
+
             ->defaultSort('id',
             'asc');
     }
@@ -277,10 +279,6 @@ class RoleResource extends Resource
     {
         return [
             'index' => Pages\ListRoles::route('/'),
-            'create' => Pages\CreateRole::route('/create'),
-
-            'view' => Pages\ViewRole::route('/{record}'),
-            'edit' => Pages\EditRole::route('/{record}/edit'),
         ];
     }
 }
