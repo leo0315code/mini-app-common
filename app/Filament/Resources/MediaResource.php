@@ -17,6 +17,8 @@ use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\ImageColumn;
@@ -65,6 +67,29 @@ class MediaResource extends Resource
                             ->helperText('支持图片/文档，保存后生成媒体记录'),
                     ]),
             ]);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->components([
+
+            Section::make('文件预览')->schema([
+                ImageEntry::make('url')->label('预览')->disk('public')->height(200)->placeholder('—'),
+            ]),
+            Section::make('基础信息')->schema([
+                TextEntry::make('id')->label('ID'),
+                TextEntry::make('file_name')->label('文件名'),
+                TextEntry::make('collection')->label('分组')->badge(),
+                TextEntry::make('mime_type')->label('MIME 类型')->placeholder('—'),
+                TextEntry::make('size')->label('大小')->formatStateUsing(fn ($s): string => round($s / 1024, 1) . ' KB'),
+                TextEntry::make('user.nickname')->label('上传者')->placeholder('—'),
+                TextEntry::make('created_at')->label('上传时间')->dateTime('Y-m-d H:i:s'),
+                TextEntry::make('updated_at')->label('更新时间')->dateTime('Y-m-d H:i:s'),
+            ])->columns(2),
+            Section::make('链接')->schema([
+                TextEntry::make('url')->label('文件链接')->copyable()->url(fn ($state): ?string => $state, shouldOpenInNewTab: true)->placeholder('—')->columnSpanFull(),
+            ]),
+        ]);
     }
 
     public static function table(Table $table): Table
@@ -144,6 +169,7 @@ class MediaResource extends Resource
                     ForceDeleteBulkAction::make(),
                 ]),
             ])
+            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }
@@ -157,6 +183,7 @@ class MediaResource extends Resource
     {
         return [
             'index' => Pages\ListMedia::route('/'),
+            'view' => Pages\ViewMedia::route('/{record}'),
             'create' => Pages\CreateMedia::route('/create'),
             'edit' => Pages\EditMedia::route('/{record}/edit'),
         ];

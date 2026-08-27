@@ -18,6 +18,7 @@ use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
@@ -93,6 +94,38 @@ class AnnouncementResource extends Resource
                             ]),
                     ]),
             ]);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->components([
+
+            Section::make('基础信息')->schema([
+                TextEntry::make('id')->label('ID'),
+                TextEntry::make('title')->label('标题'),
+                TextEntry::make('type')->label('类型')->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        Announcement::TYPE_NOTICE => '通知',
+                        Announcement::TYPE_ACTIVITY => '活动',
+                        Announcement::TYPE_UPDATE => '版本更新',
+                        default => $state,
+                    }),
+                TextEntry::make('status')->label('状态')->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        Announcement::STATUS_DRAFT => '草稿',
+                        Announcement::STATUS_PUBLISHED => '已发布',
+                        Announcement::STATUS_OFFLINE => '已下线',
+                        default => $state,
+                    })
+                    ->color(fn (string $state): string => $state === Announcement::STATUS_PUBLISHED ? 'success' : ($state === Announcement::STATUS_OFFLINE ? 'gray' : 'warning')),
+                TextEntry::make('published_at')->label('发布时间')->dateTime('Y-m-d H:i:s')->placeholder('—'),
+                TextEntry::make('created_at')->label('创建时间')->dateTime('Y-m-d H:i:s'),
+                TextEntry::make('updated_at')->label('更新时间')->dateTime('Y-m-d H:i:s'),
+            ])->columns(2),
+            Section::make('正文')->schema([
+                TextEntry::make('content')->label('正文')->html()->columnSpanFull(),
+            ]),
+        ]);
     }
 
     public static function table(Table $table): Table
@@ -186,6 +219,7 @@ class AnnouncementResource extends Resource
                     ForceDeleteBulkAction::make(),
                 ]),
             ])
+            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }
@@ -199,6 +233,7 @@ class AnnouncementResource extends Resource
     {
         return [
             'index' => Pages\ListAnnouncements::route('/'),
+            'view' => Pages\ViewAnnouncement::route('/{record}'),
             'create' => Pages\CreateAnnouncement::route('/create'),
             'edit' => Pages\EditAnnouncement::route('/{record}/edit'),
         ];

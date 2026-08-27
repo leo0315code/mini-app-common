@@ -637,6 +637,7 @@ class UserResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ])
+            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }
@@ -650,6 +651,7 @@ class UserResource extends Resource
     {
         return [
             'index' => Pages\ListUsers::route('/'),
+            'view' => Pages\ViewUser::route('/{record}'),
         ];
     }
 }

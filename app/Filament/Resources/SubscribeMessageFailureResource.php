@@ -15,6 +15,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -161,6 +162,51 @@ class SubscribeMessageFailureResource extends Resource
                     Forms\Components\TextInput::make('created_at')->label('创建时间')->disabled()->formatStateUsing(fn ($state) => $state && is_object($state) ? $state->format('Y-m-d H:i:s') : ((string) $state ?: '—')),
                     Forms\Components\TextInput::make('updated_at')->label('更新时间')->disabled()->formatStateUsing(fn ($state) => $state && is_object($state) ? $state->format('Y-m-d H:i:s') : ((string) $state ?: '—')),
                 ])->columns(2),
+        ]);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->components([
+
+            Section::make('基础信息')->schema([
+                TextEntry::make('id')->label('ID'),
+                TextEntry::make('scene')->label('场景')
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'feedback_handled' => '反馈处理',
+                        'announcement_published' => '公告发布',
+                        'notification_published' => '站内通知',
+                        'direct' => '直接推送',
+                        default => (string) $state,
+                    }),
+                TextEntry::make('subject_type')->label('关联类型')
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        \App\Models\Feedback::class => '用户反馈',
+                        \App\Models\Announcement::class => '公告',
+                        \App\Models\Notification::class => '站内通知',
+                        null => '—',
+                        default => class_basename($state),
+                    }),
+                TextEntry::make('subject_id')->label('关联ID')->placeholder('—'),
+                TextEntry::make('openid')->label('OpenID')->copyable()
+                    ->formatStateUsing(fn (?string $state): string => $state && mb_strlen($state) > 12 ? mb_substr($state, 0, 6) . '***' . mb_substr($state, -4) : (string) $state),
+                TextEntry::make('template_id')->label('模板ID')->copyable()->placeholder('—'),
+            ])->columns(2),
+            Section::make('推送结果')->schema([
+                TextEntry::make('attempts')->label('尝试次数')->suffix('次'),
+                TextEntry::make('last_errcode')->label('错误码'),
+                TextEntry::make('last_attempted_at')->label('最后尝试时间')
+                    ->formatStateUsing(fn ($state) => $state && is_object($state) ? $state->format('Y-m-d H:i:s') : ((string) $state ?: '—')),
+                TextEntry::make('last_errmsg')->label('错误信息')->placeholder('—')->columnSpanFull(),
+            ])->columns(2),
+            Section::make('处理状态')->schema([
+                TextEntry::make('resolved_at')->label('状态')
+                    ->formatStateUsing(fn ($record): string => $record->resolved_at ? '已解决' : '待处理')
+                    ->badge()->color(fn ($record): string => $record->resolved_at ? 'success' : 'warning'),
+                TextEntry::make('resolved_at')->label('解决时间')
+                    ->formatStateUsing(fn ($state) => $state && is_object($state) ? $state->format('Y-m-d H:i:s') : ((string) $state ?: '—')),
+                TextEntry::make('resolved_note')->label('解决备注')->placeholder('—')->columnSpanFull(),
+            ])->columns(2),
         ]);
     }
 

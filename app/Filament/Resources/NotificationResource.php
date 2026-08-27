@@ -14,6 +14,7 @@ use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
@@ -102,6 +103,56 @@ class NotificationResource extends Resource
                             ->default(true),
                     ]),
             ]);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->components([
+
+            Section::make('基础信息')->schema([
+                TextEntry::make('id')->label('ID'),
+                TextEntry::make('title')->label('标题'),
+                TextEntry::make('type')->label('类型')->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'system' => '系统通知',
+                        'activity' => '活动',
+                        'version' => '版本更新',
+                        default => $state,
+                    }),
+                TextEntry::make('scope')->label('接收范围')->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'all' => '全部用户',
+                        'registered' => '已注册用户',
+                        'specified' => '指定用户',
+                        default => $state,
+                    }),
+                TextEntry::make('published')->label('立即发布')->formatStateUsing(fn ($s): string => $s ? '是' : '否')->badge()->color(fn ($s): string => $s ? 'success' : 'gray'),
+                TextEntry::make('recipients_count')->label('接收人数')->numeric()
+                    ->state(fn (Notification $record): int => $record->recipients()->count())
+                    ->placeholder('0'),
+                TextEntry::make('read_rate')->label('已读率')
+                    ->state(fn (Notification $record): string => (function (Notification $r): string {
+                        $total = $r->recipients()->count();
+                        if ($total === 0) {
+                            return '—';
+                        }
+                        $read = $r->recipients()->wherePivot('read', 1)->count();
+
+                        return round($read / $total * 100) . '%';
+                    })($record))
+                    ->placeholder('—'),
+                TextEntry::make('created_at')->label('创建时间')->dateTime('Y-m-d H:i:s'),
+                TextEntry::make('updated_at')->label('更新时间')->dateTime('Y-m-d H:i:s'),
+            ])->columns(2),
+            Section::make('接收人')->schema([
+                TextEntry::make('targets')->label('指定用户')
+                    ->formatStateUsing(fn ($state) => is_array($state) && count($state) ? '用户ID: ' . implode(', ', $state) : '—')
+                    ->placeholder('—')->columnSpanFull(),
+            ]),
+            Section::make('正文')->schema([
+                TextEntry::make('body')->label('正文')->placeholder('—')->columnSpanFull(),
+            ]),
+        ]);
     }
 
     public static function table(Table $table): Table
@@ -279,6 +330,7 @@ class NotificationResource extends Resource
                 ]),
             ])
             ->recordClasses(fn (Notification $record): ?string => $record->published ? null : 'fi-ta-row-unpublished')
+            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }
@@ -292,6 +344,7 @@ class NotificationResource extends Resource
     {
         return [
             'index' => Pages\ListNotifications::route('/'),
+            'view' => Pages\ViewNotification::route('/{record}'),
             'create' => Pages\CreateNotification::route('/create'),
             'edit' => Pages\EditNotification::route('/{record}/edit'),
         ];

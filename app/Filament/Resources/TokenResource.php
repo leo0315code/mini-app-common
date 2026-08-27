@@ -5,7 +5,9 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\TokenResource\Pages;
 use App\Models\User;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Actions\DeleteAction;
@@ -48,6 +50,26 @@ class TokenResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([]);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->components([
+
+            Section::make('基础信息')->schema([
+                TextEntry::make('id')->label('ID'),
+                TextEntry::make('tokenable.name')->label('用户')
+                    ->formatStateUsing(fn ($state, $record) => $record->tokenable->name ?? $record->tokenable->nickname ?? '用户#' . $record->tokenable_id),
+                TextEntry::make('name')->label('Token 名称')->placeholder('—'),
+                TextEntry::make('device_name')->label('设备')->placeholder('—'),
+                TextEntry::make('user_agent')->label('客户端 UA')->placeholder('—'),
+                TextEntry::make('abilities')->label('能力')
+                    ->formatStateUsing(fn ($state) => is_array($state) && count($state) ? implode(', ', $state) : '默认（*）'),
+                TextEntry::make('last_used_at')->label('最近使用')->dateTime('Y-m-d H:i:s')->placeholder('从未使用'),
+                TextEntry::make('expires_at')->label('过期时间')->dateTime('Y-m-d H:i:s')->placeholder('—'),
+                TextEntry::make('created_at')->label('创建时间')->dateTime('Y-m-d H:i:s'),
+            ])->columns(2),
+        ]);
     }
 
     public static function table(Table $table): Table
@@ -120,6 +142,7 @@ class TokenResource extends Resource
     {
         return [
             'index' => Pages\ListTokens::route('/'),
+            'view' => Pages\ViewToken::route('/{record}'),
         ];
     }
 }

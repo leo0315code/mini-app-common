@@ -16,6 +16,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
@@ -92,6 +93,50 @@ class FeedbackResource extends Resource
                         ->disabled()
                         ->formatStateUsing(fn ($state) => $state ? $state->format('Y-m-d H:i') : '—'),
                 ])->columns(2),
+        ]);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->components([
+
+            Section::make('反馈信息')->schema([
+                TextEntry::make('id')->label('ID'),
+                TextEntry::make('user.nickname')->label('用户')->placeholder('—'),
+                TextEntry::make('type')->label('类型')->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'bug' => '缺陷',
+                        'complaint' => '投诉',
+                        'suggestion' => '建议',
+                        default => '其他',
+                    }),
+                TextEntry::make('contact')->label('联系方式')->placeholder('—'),
+                TextEntry::make('status')->label('状态')->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'pending' => '待处理',
+                        'processing' => '处理中',
+                        'resolved' => '已解决',
+                        'rejected' => '已驳回',
+                        default => $state,
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'pending' => 'warning',
+                        'processing' => 'info',
+                        'resolved' => 'success',
+                        'rejected' => 'danger',
+                        default => 'gray',
+                    }),
+                TextEntry::make('created_at')->label('提交时间')->dateTime('Y-m-d H:i:s'),
+            ])->columns(2),
+            Section::make('内容')->schema([
+                TextEntry::make('content')->label('反馈内容')->placeholder('—')->columnSpanFull(),
+            ]),
+            Section::make('处理记录')->schema([
+                TextEntry::make('handler.name')->label('处理人')
+                    ->formatStateUsing(fn ($state, $record) => $record->handler?->name ?? '—'),
+                TextEntry::make('handled_at')->label('处理时间')->dateTime('Y-m-d H:i:s')->placeholder('—'),
+                TextEntry::make('handle_note')->label('处理备注')->placeholder('—')->columnSpanFull(),
+            ])->columns(2),
         ]);
     }
 

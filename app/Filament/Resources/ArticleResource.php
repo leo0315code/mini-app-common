@@ -18,6 +18,8 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Tables;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
@@ -116,6 +118,37 @@ class ArticleResource extends Resource
             ]);
     }
 
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->components([
+
+            Section::make('基础信息')->schema([
+                TextEntry::make('id')->label('ID'),
+                TextEntry::make('category.name')->label('分类')->placeholder('—'),
+                TextEntry::make('title')->label('标题'),
+                TextEntry::make('slug')->label('标识')->placeholder('—'),
+                TextEntry::make('status')->label('状态')->badge()
+                    ->formatStateUsing(fn ($state): string => match ($state) {
+                        Article::STATUS_DRAFT => '草稿',
+                        Article::STATUS_PUBLISHED => '已发布',
+                        Article::STATUS_OFFLINE => '已下线',
+                        default => (string) $state,
+                    })
+                    ->color(fn ($state): string => $state === Article::STATUS_PUBLISHED ? 'success' : ($state === Article::STATUS_OFFLINE ? 'gray' : 'warning')),
+                TextEntry::make('is_top')->label('置顶')->formatStateUsing(fn ($s): string => $s ? '是' : '否')->badge()->color(fn ($s): string => $s ? 'success' : 'gray'),
+                TextEntry::make('views')->label('浏览量')->numeric(),
+                TextEntry::make('published_at')->label('发布时间')->dateTime('Y-m-d H:i:s')->placeholder('—'),
+            ])->columns(2),
+            Section::make('封面与摘要')->schema([
+                ImageEntry::make('cover')->label('封面')->disk('public')->height(160)->placeholder('—'),
+                TextEntry::make('summary')->label('摘要')->placeholder('—')->columnSpanFull(),
+            ])->columns(2),
+            Section::make('正文')->schema([
+                TextEntry::make('content')->label('正文')->html()->columnSpanFull(),
+            ]),
+        ]);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -180,6 +213,7 @@ class ArticleResource extends Resource
                     ForceDeleteBulkAction::make(),
                 ]),
             ])
+            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
             ->defaultSort('created_at', 'desc');
     }
@@ -193,6 +227,7 @@ class ArticleResource extends Resource
     {
         return [
             'index' => Pages\ListArticles::route('/'),
+            'view' => Pages\ViewArticle::route('/{record}'),
             'create' => Pages\CreateArticle::route('/create'),
             'edit' => Pages\EditArticle::route('/{record}/edit'),
         ];

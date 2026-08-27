@@ -7,12 +7,14 @@ use App\Models\Role;
 use App\Support\MenuCascadeService;
 use App\Support\RolePresetTemplates;
 use Filament\Forms;
+use Filament\Schemas\Components\Section;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Actions\CreateAction;
@@ -109,6 +111,27 @@ class RoleResource extends Resource
                             ]),
                     ]),
             ]);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->components([
+
+            Section::make('基础信息')->schema([
+                TextEntry::make('id')->label('ID'),
+                TextEntry::make('name')->label('角色名称'),
+                TextEntry::make('slug')->label('角色标识'),
+                TextEntry::make('description')->label('角色说明')->placeholder('—')->columnSpanFull(),
+                TextEntry::make('users_count')->label('关联用户数')->numeric()
+                    ->state(fn (Role $record): int => $record->users()->count())
+                    ->placeholder('0'),
+                TextEntry::make('created_at')->label('创建时间')->dateTime('Y-m-d H:i:s'),
+                TextEntry::make('updated_at')->label('更新时间')->dateTime('Y-m-d H:i:s'),
+            ])->columns(2),
+            Section::make('菜单权限')->schema([
+                TextEntry::make('menus.name')->label('已分配菜单')->badge()->listWithLineBreaks()->bulleted()->placeholder('未分配'),
+            ]),
+        ]);
     }
 
     public static function table(Table $table): Table
@@ -216,6 +239,7 @@ class RoleResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ])
+            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
             ->defaultSort('id', 'asc');
     }
@@ -249,6 +273,7 @@ class RoleResource extends Resource
     {
         return [
             'index' => Pages\ListRoles::route('/'),
+            'view' => Pages\ViewRole::route('/{record}'),
             'create' => Pages\CreateRole::route('/create'),
             'edit' => Pages\EditRole::route('/{record}/edit'),
         ];

@@ -6,8 +6,11 @@ use App\Filament\Resources\AuditLogResource\Pages;
 use App\Models\AuditLog;
 use App\Models\User;
 use Filament\Forms;
+use Filament\Schemas\Components\Section;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Infolists\Components\KeyValueEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Actions\ViewAction;
@@ -58,6 +61,46 @@ class AuditLogResource extends Resource
             Forms\Components\KeyValue::make('new_data')->label('变更后')->disabled(),
             Forms\Components\TextInput::make('url')->label('请求地址')->disabled(),
             Forms\Components\TextInput::make('ip')->label('IP')->disabled(),
+        ]);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->components([
+
+            Section::make('操作信息')->schema([
+                TextEntry::make('id')->label('ID'),
+                TextEntry::make('type')->label('类型')->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'create' => '新增',
+                        'update' => '修改',
+                        'delete' => '删除',
+                        'login' => '登录',
+                        'config' => '配置',
+                        default => $state,
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'create' => 'success',
+                        'update' => 'info',
+                        'delete' => 'danger',
+                        'login' => 'gray',
+                        'config' => 'warning',
+                        default => 'gray',
+                    }),
+                TextEntry::make('module')->label('模块'),
+                TextEntry::make('action')->label('操作')->columnSpanFull(),
+                TextEntry::make('user.name')->label('操作人')
+                    ->formatStateUsing(fn ($state, $record) => $record->user?->name ?? $record->user?->nickname ?? '系统'),
+                TextEntry::make('ip')->label('IP')->placeholder('—'),
+                TextEntry::make('created_at')->label('时间')->dateTime('Y-m-d H:i:s'),
+            ])->columns(2),
+            Section::make('描述')->schema([
+                TextEntry::make('description')->label('描述')->placeholder('—')->columnSpanFull(),
+            ]),
+            Section::make('数据变更')->schema([
+                KeyValueEntry::make('old_data')->label('变更前')->placeholder('（无）'),
+                KeyValueEntry::make('new_data')->label('变更后')->placeholder('（无）'),
+            ])->columns(2),
         ]);
     }
 

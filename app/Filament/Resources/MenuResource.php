@@ -5,8 +5,10 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\MenuResource\Pages;
 use App\Models\Menu;
 use Filament\Forms;
+use Filament\Schemas\Components\Section;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Actions\CreateAction;
@@ -83,6 +85,27 @@ class MenuResource extends Resource
             ]);
     }
 
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->components([
+
+            Section::make('基础信息')->schema([
+                TextEntry::make('id')->label('ID'),
+                TextEntry::make('parent.name')->label('父级菜单')->placeholder('顶级菜单'),
+                TextEntry::make('name')->label('菜单名称'),
+                TextEntry::make('slug')->label('菜单标识'),
+                TextEntry::make('icon')->label('图标')->placeholder('—'),
+                TextEntry::make('route')->label('路由')->placeholder('—'),
+                TextEntry::make('permission')->label('权限标识')->placeholder('—'),
+                TextEntry::make('sort_order')->label('排序')->numeric(),
+                TextEntry::make('is_visible')->label('侧边栏显示')->formatStateUsing(fn ($s): string => $s ? '显示' : '隐藏')->badge()->color(fn ($s): string => $s ? 'success' : 'gray'),
+                TextEntry::make('is_active')->label('启用')->formatStateUsing(fn ($s): string => $s ? '启用' : '停用')->badge()->color(fn ($s): string => $s ? 'success' : 'gray'),
+                TextEntry::make('created_at')->label('创建时间')->dateTime('Y-m-d H:i:s'),
+                TextEntry::make('updated_at')->label('更新时间')->dateTime('Y-m-d H:i:s'),
+            ])->columns(2),
+        ]);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -156,6 +179,7 @@ class MenuResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ])
+            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
             ->defaultSort('sort_order', 'asc');
     }
@@ -169,6 +193,7 @@ class MenuResource extends Resource
     {
         return [
             'index' => Pages\ListMenus::route('/'),
+            'view' => Pages\ViewMenu::route('/{record}'),
             'create' => Pages\CreateMenu::route('/create'),
             'edit' => Pages\EditMenu::route('/{record}/edit'),
         ];

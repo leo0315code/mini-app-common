@@ -14,6 +14,8 @@ use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Tables;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
@@ -105,6 +107,37 @@ class BannerResource extends Resource
             ]);
     }
 
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->components([
+
+            Section::make('图片素材')->schema([
+                ImageEntry::make('image')->label('Banner 图片')->disk('public')->height(180)->placeholder('—'),
+            ]),
+            Section::make('基础信息')->schema([
+                TextEntry::make('id')->label('ID'),
+                TextEntry::make('title')->label('标题'),
+                TextEntry::make('is_active')->label('启用')->formatStateUsing(fn ($s): string => $s ? '启用' : '停用')->badge()->color(fn ($s): string => $s ? 'success' : 'gray'),
+                TextEntry::make('sort_order')->label('排序')->numeric(),
+                TextEntry::make('starts_at')->label('生效开始')->dateTime('Y-m-d H:i:s')->placeholder('—'),
+                TextEntry::make('ends_at')->label('生效结束')->dateTime('Y-m-d H:i:s')->placeholder('—'),
+                TextEntry::make('created_at')->label('创建时间')->dateTime('Y-m-d H:i:s'),
+                TextEntry::make('updated_at')->label('更新时间')->dateTime('Y-m-d H:i:s'),
+            ])->columns(2),
+            Section::make('跳转配置')->schema([
+                TextEntry::make('link_type')->label('跳转类型')->badge()
+                    ->formatStateUsing(fn ($state): string => match ($state) {
+                        Banner::LINK_NONE => '不跳转',
+                        Banner::LINK_ARTICLE => '跳转文章',
+                        Banner::LINK_URL => '跳转链接',
+                        default => (string) $state,
+                    }),
+                TextEntry::make('article.title')->label('关联文章')->placeholder('—'),
+                TextEntry::make('url')->label('跳转链接')->placeholder('—')->url(fn ($s): ?string => $s)->openUrlInNewTab(),
+            ])->columns(2),
+        ]);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -161,6 +194,7 @@ class BannerResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ])
+            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->enhanceListExperience()
             ->defaultSort('sort_order')
             ->reorderable('sort_order');
@@ -170,6 +204,7 @@ class BannerResource extends Resource
     {
         return [
             'index' => Pages\ListBanners::route('/'),
+            'view' => Pages\ViewBanner::route('/{record}'),
             'create' => Pages\CreateBanner::route('/create'),
             'edit' => Pages\EditBanner::route('/{record}/edit'),
         ];
