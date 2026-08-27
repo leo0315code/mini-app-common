@@ -48,6 +48,10 @@ return [
     'mini_program' => [
         'app_id' => env('MINI_PROGRAM_APP_ID'),
         'secret' => env('MINI_PROGRAM_SECRET'),
+        // 订阅消息模板 ID：优先 .env，未配置时可经后台「系统配置」页保存
+        // （存 settings 表，由 SettingConfigLoader 在启动时覆盖本数组）
+        'feedback_template_id' => env('MINI_PROGRAM_FEEDBACK_TEMPLATE_ID'),
+        'announcement_template_id' => env('MINI_PROGRAM_ANNOUNCEMENT_TEMPLATE_ID'),
     ],
 
 ];

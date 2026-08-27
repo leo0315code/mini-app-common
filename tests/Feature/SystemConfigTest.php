@@ -61,4 +61,25 @@ class SystemConfigTest extends TestCase
         $this->assertEquals(1440, Setting::getGroup('security')['token_expiration']);
         $this->assertEquals('医保后台', Setting::getGroup('general')['brand_name']);
     }
+
+    /**
+     * 保存后新请求能读回配置（SettingConfigLoader 启动加载）——
+     * 防止「后台填了订阅模板 ID 但重启后失效」的缺口回归。
+     */
+    public function test_saved_settings_are_loaded_into_config_on_boot(): void
+    {
+        // 预置 settings 记录（模拟此前后台保存过）
+        Setting::setGroup('mini_program', [
+            'app_id' => 'wx_saved_appid',
+            'feedback_template_id' => 'TPL_FEEDBACK_SAVED',
+            'announcement_template_id' => 'TPL_ANNOUNCE_SAVED',
+        ]);
+
+        // 触发一次完整的应用启动加载（每个请求/测试都会走 AppServiceProvider::boot）
+        app(\App\Support\SettingConfigLoader::class)->load();
+
+        $this->assertSame('wx_saved_appid', config('services.mini_program.app_id'));
+        $this->assertSame('TPL_FEEDBACK_SAVED', config('services.mini_program.feedback_template_id'));
+        $this->assertSame('TPL_ANNOUNCE_SAVED', config('services.mini_program.announcement_template_id'));
+    }
 }

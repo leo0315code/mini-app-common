@@ -29,6 +29,7 @@ use App\Policies\UserPolicy;
 use App\Observers\AuditObserver;
 use App\Observers\ContentCacheObserver;
 use App\Observers\PermissionCacheObserver;
+use App\Support\SettingConfigLoader;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -44,6 +45,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // 启动时把后台「系统配置」页保存的值（含订阅消息模板 ID）覆盖进运行时 config
+        app(SettingConfigLoader::class)->load();
+
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
