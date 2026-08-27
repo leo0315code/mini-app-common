@@ -180,14 +180,14 @@
 
 /* ---------- 统计卡片（工作台） ---------- */
 .fi-wi-stats-overview-stat {
-    @apply overflow-hidden border-0 shadow-md ring-1 ring-gray-950/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl dark:ring-white/10;
+    @apply overflow-hidden border-0 shadow-md ring-1 ring-gray-950/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl;
 
     & .fi-wi-stats-overview-stat-content .fi-icon {
         @apply size-7 rounded-xl bg-gradient-to-br from-brand-500 to-accent-500 p-1.5 text-white shadow-sm;
     }
 
     & .fi-wi-stats-overview-stat-value {
-        @apply text-4xl font-bold tracking-tight text-gray-950 dark:text-white;
+        @apply text-4xl font-bold tracking-tight text-gray-950;
     }
 }
 
@@ -204,26 +204,24 @@
 
 /* ---------- 区块标题（Section） ---------- */
 .fi-section:not(.fi-section-not-contained) > .fi-section-header {
-    @apply border-b border-gray-100 dark:border-white/5;
+    @apply border-b border-gray-100;
 }
 
 .fi-section-header-heading {
     @apply text-lg font-bold tracking-tight;
 
-    /* 标题左侧品牌渐变竖条，强化区块识别度 */
-    &:not(:empty) {
-        @apply relative pl-3;
+    /* 标题左侧品牌渐变竖条，与页面一级标题同源 */
+    @apply relative pl-3;
 
-        &::before {
-            content: '';
-            @apply absolute left-0 top-1/2 h-[1.1em] w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-brand-500 to-accent-500;
-        }
+    &::before {
+        content: '';
+        @apply absolute left-0 top-1/2 h-[1.1em] w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-brand-500 to-accent-500;
     }
 }
 
 /* ---------- 顶栏 ---------- */
 .fi-topbar {
-    @apply bg-white/80 backdrop-blur dark:bg-gray-900/80;
+    @apply bg-white/80 backdrop-blur;
 }
 
 /* ---------- 表格 ---------- */
@@ -237,7 +235,7 @@
 
 /* 斑马纹：偶数行极淡品牌底，长列表可读性（比 hover 更淡，不冲突） */
 .fi-ta-table .fi-ta-body .fi-ta-row:nth-child(even) {
-    @apply bg-gray-50/60 dark:bg-white/[0.02];
+    @apply bg-gray-50/60;
 
     &:hover {
         @apply bg-brand-500/5;
@@ -246,10 +244,10 @@
 
 /* 选中行持久高亮：勾选后品牌淡底，与斑马纹/hover 区分（压过默认 bg-gray-50） */
 .fi-ta-row.fi-selected {
-    @apply bg-brand-500/[0.10] dark:bg-brand-500/10;
+    @apply bg-brand-500/[0.10];
 
     &:hover {
-        @apply bg-brand-500/[0.14] dark:bg-brand-500/15;
+        @apply bg-brand-500/[0.14];
     }
 }
 
@@ -277,11 +275,11 @@
 }
 
 .fi-ta-table thead .fi-ta-header-cell {
-    @apply bg-gray-50 dark:bg-white/5;
+    @apply bg-gray-50;
 
     /* 吸顶后必须不透明，否则下方行内容会透出 */
     & > .fi-ta-header-cell-content {
-        @apply bg-gray-50 dark:bg-white/5;
+        @apply bg-gray-50;
     }
 }
 
@@ -313,10 +311,10 @@
 .fi-ta-header-cell:not(.fi-ta-header-cell-sorted) {
     & .fi-ta-header-cell-sort-btn:hover,
     & .fi-ta-header-cell-sort-btn:focus-visible {
-        @apply text-brand-600 dark:text-white/90;
+        @apply text-brand-600;
 
         & .fi-icon {
-            @apply text-brand-600 dark:text-white/90;
+            @apply text-brand-600;
         }
     }
 }
@@ -324,10 +322,10 @@
 /* 已激活的筛选触发按钮：品牌淡底 + 品牌字，呼应激活态语义 */
 .fi-ta-filters-trigger-action-ctn .fi-btn.fi-color.fi-color-gray:not(.fi-outlined),
 .fi-ta-filters-trigger-action-ctn .fi-btn.fi-active:not(.fi-outlined) {
-    @apply bg-brand-500/10 text-brand-600 dark:bg-white/10 dark:text-white/80;
+    @apply bg-brand-500/10 text-brand-600;
 
     & > .fi-icon {
-        @apply text-brand-600 dark:text-white/80;
+        @apply text-brand-600;
     }
 }
 
@@ -337,7 +335,7 @@
 
     /* 当前页（最后一个非链接项）品牌色，强化导航锚点 */
     & ol > li:last-child:not(:has(a)) {
-        @apply font-semibold text-brand-600 dark:text-white/90;
+        @apply font-semibold text-brand-600;
     }
 }
 
@@ -346,24 +344,24 @@
    带 fi-color 的语义项（危险/成功等）保持原色 hover，不污染对比层级 */
 .fi-dropdown-list-item:not(.fi-color) {
     &:not(.fi-disabled):not([disabled]) {
-        @apply hover:bg-brand-500/[0.07] focus-visible:bg-brand-500/[0.07] dark:hover:bg-white/5 dark:focus-visible:bg-white/5;
+        @apply hover:bg-brand-500/[0.07] focus-visible:bg-brand-500/[0.07];
 
         &:hover,
         &:focus-visible {
             & .fi-dropdown-list-item-label,
             & > .fi-icon {
-                @apply text-brand-600 dark:text-white/90;
+                @apply text-brand-600;
             }
         }
     }
 
     /* 选中（如 Select 当前值 / 单列排序选中）项：品牌淡底 + 品牌字，一眼可辨 */
     &.fi-selected {
-        @apply bg-brand-500/[0.07] dark:bg-white/5;
+        @apply bg-brand-500/[0.07];
 
         & .fi-dropdown-list-item-label,
         & > .fi-icon {
-            @apply text-brand-600 dark:text-white/90;
+            @apply text-brand-600;
         }
     }
 }
@@ -371,6 +369,7 @@
 /* ---------- 页面一级标题（品牌竖条，与 Section 标题同源） ---------- */
 .fi-header-heading {
     @apply relative pl-3;
+    margin-bottom: 0 !important;
 
     &::before {
         content: '';
@@ -398,11 +397,11 @@
     @apply transition duration-150;
 
     &:hover {
-        @apply bg-brand-500/5 text-brand-600 dark:bg-white/5 dark:text-white/80;
+        @apply bg-brand-500/5 text-brand-600;
 
         & .fi-tabs-item-label,
         & > .fi-icon {
-            @apply text-brand-600 dark:text-white/80;
+            @apply text-brand-600;
         }
     }
 }
@@ -440,7 +439,7 @@
 /* ---------- 图表 Widget（仪表盘） ---------- */
 /* 图表卡片顶部渐变条，与统计卡片/弹窗/登录卡片同源点缀语言 */
 .fi-wi-chart {
-    @apply overflow-hidden ring-1 ring-gray-950/5 dark:ring-white/10;
+    @apply overflow-hidden ring-1 ring-gray-950/5;
 
     &::before {
         content: '';
@@ -467,7 +466,7 @@
 }
 
 .fi-modal-header {
-    @apply border-b border-gray-100 dark:border-white/5;
+    @apply border-b border-gray-100;
 }
 .fi-fo-rich-editor .fi-fo-rich-editor-main .fi-fo-rich-editor-content {
     min-height: 28rem;
@@ -495,13 +494,13 @@
 
 /* 非激活页码/前后翻页按钮 hover：品牌淡底 + 品牌字，整条分页器观感统一 */
 .fi-pagination-item:not(.fi-active) > .fi-pagination-item-btn:enabled {
-    @apply hover:bg-brand-500/[0.07] focus-visible:bg-brand-500/[0.07] dark:hover:bg-white/5 dark:focus-visible:bg-white/5;
+    @apply hover:bg-brand-500/[0.07] focus-visible:bg-brand-500/[0.07];
 
     &:hover,
     &:focus-visible {
         & .fi-pagination-item-label,
         & .fi-icon {
-            @apply text-brand-600 dark:text-white/90;
+            @apply text-brand-600;
         }
     }
 }
@@ -524,10 +523,6 @@
 
 .fi-header .fi-breadcrumbs {
     margin-bottom: 0.125rem !important;
-}
-
-.fi-header-heading {
-    margin-bottom: 0 !important;
 }
 
 .fi-header-subheading {
