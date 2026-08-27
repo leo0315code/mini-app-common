@@ -481,13 +481,19 @@
         @apply absolute left-0 top-1/2 h-[1.1em] w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-brand-500 to-accent-500;
     }
 }
-/* 弹窗窗口顶部渐变条，与登录卡片/统计卡片的点缀语言呼应 */
+/* 弹窗窗口：统一限高 + 内部滚动兜底
+   根因：Filament v5 默认对「无 sticky 头/尾」的普通弹窗不设置 max-height，
+   仅给外层 .fi-modal-window-ctn 加 overflow-y-auto（无高度约束 → 不裁切也不滚）；
+   再叠加此前 .fi-modal-window 上的 overflow-hidden 直接切断滚动回退，导致超高内容
+   超出视口却无滚动条、被固定层挡住下半部分。此处给窗口自身补 max-height + 内部滚动，
+   兼顾「普通弹窗」与「sticky 弹窗」（后者由 Filament 自带规则仍以更高特异性生效）。
+   顶部品牌渐变条改为 sticky 吸顶，滚动时始终可见，与登录/统计卡片点缀呼应 */
 .fi-modal-window {
-    @apply overflow-hidden;
+    @apply max-h-[calc(100dvh-2.5rem)] overflow-y-auto;
 
     &::before {
         content: '';
-        @apply block h-1 w-full bg-gradient-to-r from-brand-500 to-accent-500;
+        @apply sticky top-0 z-[1] block h-1 w-full bg-gradient-to-r from-brand-500 to-accent-500;
     }
 }
 
