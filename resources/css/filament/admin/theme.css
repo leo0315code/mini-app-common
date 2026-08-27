@@ -628,3 +628,14 @@
 .fi-topbar .fi-user-menu-trigger {
     @apply rounded-lg transition duration-150 hover:bg-brand-500/[0.07];
 }
+
+/* 5) 顶栏图标按钮（通知/全屏/主题等 hover：中性灰改为品牌淡底 + 品牌图标，
+   与侧栏菜单项 hover 同源，顶栏交互观感统一 */
+.fi-topbar-item-btn {
+    @apply hover:bg-brand-500/[0.07] focus-visible:bg-brand-500/[0.07];
+
+    &:hover > .fi-icon,
+    &:focus-visible > .fi-icon {
+        @apply text-brand-600;
+    }
+}
