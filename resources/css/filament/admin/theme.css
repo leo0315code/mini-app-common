@@ -596,3 +596,35 @@
     padding: 0.25rem 0.5rem !important;
     gap: 0.5rem !important;
 }
+
+/* =================== 品牌化缺口补齐（统一后台风格） =================== */
+/* 说明：表单输入框 focus 环、通知未读竖条因 primary 已映射 #0D9488 自动为品牌色，
+   下列为尚未接入品牌中性灰关键件，统一锚定 teal→sky 体系。 */
+
+/* 1) 下拉面板（操作菜单/用户菜单/批量操作/Select 弹层）：品牌淡描边，呼应卡片 ring 语言 */
+.fi-dropdown-panel {
+    @apply ring-1 ring-brand-500/15;
+}
+
+/* 2) 全局搜索框：顶栏中性灰 search input 接管为品牌淡底 + focus 品牌环 */
+.fi-global-search-field {
+    @apply rounded-lg bg-brand-500/[0.04] ring-1 ring-brand-500/15 transition duration-75;
+
+    &:focus-within {
+        @apply bg-brand-500/[0.08] ring-2 ring-brand-500/30;
+    }
+
+    & .fi-input {
+        @apply bg-transparent;
+    }
+}
+
+/* 3) 中性灰次级按钮（取消/关闭等）：hover 品牌淡底 + 品牌字，与筛选激活态同源 */
+.fi-btn.fi-color.fi-color-gray:not(.fi-outlined) {
+    @apply hover:bg-brand-500/[0.07] focus-visible:bg-brand-500/[0.07];
+}
+
+/* 4) 用户菜单触发器（顶栏头像区）：hover 品牌淡底，与侧栏菜单项 hover 同源 */
+.fi-topbar .fi-user-menu-trigger {
+    @apply rounded-lg transition duration-150 hover:bg-brand-500/[0.07];
+}
