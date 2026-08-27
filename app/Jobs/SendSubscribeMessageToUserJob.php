@@ -93,6 +93,8 @@ class SendSubscribeMessageToUserJob implements ShouldQueue, ShouldBeUnique
 
         if ($result['success']) {
             $this->writeAudit('subscribe_sent', $result);
+            // 若存在对应失败记录（重试场景），标记已解决，避免后台一直显示待处理
+            $this->resolvePendingFailure($result);
 
             return;
         }
@@ -165,6 +167,30 @@ class SendSubscribeMessageToUserJob implements ShouldQueue, ShouldBeUnique
             ]);
         } catch (\Throwable $e) {
             Log::warning('[订阅消息-队列] 单用户审计写入失败: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 重试成功后，把匹配的未解决失败记录标记为已解决。
+     * 匹配条件：scene + subject + openid 一致且未解决；仅回写最早一条，避免误标历史。
+     */
+    protected function resolvePendingFailure(array $result): void
+    {
+        try {
+            SubscribeMessageFailure::query()
+                ->where('scene', $this->scene)
+                ->where('subject_type', $this->subjectType)
+                ->where('subject_id', $this->subjectId)
+                ->where('openid', $this->openid)
+                ->whereNull('resolved_at')
+                ->latest('id')
+                ->first()
+                ?->update([
+                    'resolved_at' => now(),
+                    'resolved_note' => '重试成功（errcode='.($result['errcode'] ?? 0).'）',
+                ]);
+        } catch (\Throwable $e) {
+            Log::warning('[订阅消息-队列] 失败记录回写已解决失败: ' . $e->getMessage());
         }
     }
 
