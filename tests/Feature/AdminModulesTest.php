@@ -189,4 +189,37 @@ class AdminModulesTest extends TestCase
             ->postJson('/api/upload', [])
             ->assertStatus(422);
     }
+
+    /**
+     * 媒体上传安全：非白名单类型（可执行脚本）应被 422 拒绝。
+     */
+    public function test_media_upload_rejects_non_whitelisted_mime(): void
+    {
+        Storage::fake('public');
+        $user = $this->member();
+
+        // php 脚本伪装为图片扩展名：mimes 校验基于文件内容，仍应拒绝
+        $this->actingAs($user)
+            ->postJson('/api/upload', [
+                'file' => UploadedFile::fake()->create('evil.php', 1024, 'application/x-php'),
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('code', 42200);
+
+        // svg 可内嵌脚本，同样排除
+        $this->actingAs($user)
+            ->postJson('/api/upload', [
+                'file' => UploadedFile::fake()->create('xss.svg', 1024, 'image/svg+xml'),
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('code', 42200);
+
+        // 白名单内类型不受影响
+        $this->actingAs($user)
+            ->postJson('/api/upload', [
+                'file' => UploadedFile::fake()->image('ok.png'),
+            ])
+            ->assertStatus(200)
+            ->assertJsonPath('code', 0);
+    }
 }

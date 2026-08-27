@@ -17,7 +17,9 @@ class MediaController extends Controller
     public function upload(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'file' => ['required', 'file', 'max:10240'], // 10MB
+            // mime 白名单：覆盖业务声明的图片+文档类型；
+            // 排除 svg（可内嵌脚本，存储型 XSS 风险）与一切可执行/脚本类型（php/html/js 等）
+            'file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,gif,webp,bmp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,md,csv,zip,rar'],
             'collection' => ['nullable', 'string', 'max:40'],
         ]);
 
@@ -40,7 +42,7 @@ class MediaController extends Controller
             'file_name' => $file->getClientOriginalName(),
             'path' => $path,
             'disk' => 'public',
-            'mime_type' => $file->getClientMimeType(),
+            'mime_type' => $file->getMimeType(), // 服务端检测，不信任客户端声明的 mime
             'url' => Storage::disk('public')->url($path),
             'size' => $file->getSize(),
             'meta' => ['original_name' => $file->getClientOriginalName()],
