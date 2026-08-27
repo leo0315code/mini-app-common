@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\PublishScheduled;
+use App\Console\Commands\RetryFailedSubscribeMessages;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -26,3 +27,10 @@ Schedule::command(PublishScheduled::class)
     ->withoutOverlapping()
     ->runInBackground()
     ->description('发布计划到期的公告与站内通知');
+
+// 订阅消息失败自动重试：每 5 分钟补发前 100 条未解决失败记录（幂等，可随时手动执行）
+Schedule::command(RetryFailedSubscribeMessages::class, ['--limit=100'])
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->description('重试失败表中未解决的订阅消息');
