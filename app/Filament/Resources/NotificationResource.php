@@ -160,6 +160,10 @@ class NotificationResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->withCount([
+                'recipients',
+                'readRecipients' => fn (Builder $q) => $q->wherePivot('read', true),
+            ]))
             ->columns([
                 TextColumn::make('id')
                     ->label('ID')
@@ -198,11 +202,11 @@ class NotificationResource extends Resource
                 TextColumn::make('read_rate')
                     ->label('已读率')
                     ->state(fn (Notification $record): string => (function () use ($record) {
-                        $total = $record->recipients()->count();
+                        $total = (int) ($record->recipients_count ?? 0);
                         if ($total === 0) {
                             return '—';
                         }
-                        $read = $record->recipients()->wherePivot('read', true)->count();
+                        $read = (int) ($record->read_recipients_count ?? 0);
 
                         return round($read / $total * 100) . '%';
                     })())
@@ -271,7 +275,10 @@ class NotificationResource extends Resource
             ])
             ->toolbarActions([
                 self::buildExportAllHeaderAction(
-                    baseQuery: Notification::query()->with(['creator'])->withCount('recipients'),
+                    baseQuery: Notification::query()->with(['creator'])->withCount([
+                        'recipients',
+                        'readRecipients',
+                    ]),
                     columnMap: [
                         'id' => 'ID',
             'title' => '标题',
@@ -302,13 +309,13 @@ class NotificationResource extends Resource
                         },
                         (string) $n->body,
                         $n->published ? '已发布' : '草稿',
-                        (int) ($n->recipients_count ?? $n->recipients()->count()),
+                        (int) ($n->recipients_count ?? 0),
                         (function () use ($n): string {
-                            $total = (int) ($n->recipients_count ?? $n->recipients()->count());
+                            $total = (int) ($n->recipients_count ?? 0);
                             if ($total === 0) {
                                 return '0%';
                             }
-                            $read = $n->recipients()->wherePivot('read', true)->count();
+                            $read = (int) ($n->read_recipients_count ?? 0);
 
                             return round($read / $total * 100) . '%';
                         })(),
@@ -330,6 +337,7 @@ class NotificationResource extends Resource
                         ],
                         label: '导出所选 CSV',
                         fileNamePrefix: 'notifications',
+                        withCount: ['recipients', 'readRecipients'],
                         rowCallback: static fn (Notification $n): array => [
                             $n->id,
                             (string) $n->title,
@@ -344,7 +352,7 @@ class NotificationResource extends Resource
                                 default => '全部',
                             },
                             $n->published ? '已发布' : '草稿',
-                            $n->recipients()->count(),
+                            (int) ($n->recipients_count ?? 0),
                             $n->created_at?->format('Y-m-d H:i:s') ?? '',
                         ],
                     ),

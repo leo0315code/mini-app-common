@@ -49,12 +49,17 @@ trait ExportsCsv
         string $icon = 'heroicon-o-arrow-down-tray',
         string $fileNamePrefix = 'export',
         ?\Closure $rowCallback = null,
+        array $withCount = [],
     ) {
         return \Filament\Actions\BulkAction::make('exportSelectedCsv')
             ->label($label)
             ->icon($icon)
             ->deselectRecordsAfterCompletion()
-            ->action(function (Collection $records) use ($columnMap, $fileNamePrefix, $rowCallback): StreamedResponse {
+            ->action(function (Collection $records) use ($columnMap, $fileNamePrefix, $rowCallback, $withCount): StreamedResponse {
+                if ($withCount !== []) {
+                    $records->loadCount($withCount);
+                }
+
                 $headers = array_values($columnMap);
                 $keys = array_keys($columnMap);
 

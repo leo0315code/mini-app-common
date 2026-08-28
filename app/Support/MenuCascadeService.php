@@ -116,8 +116,15 @@ class MenuCascadeService
         )->unique()->values()->all();
 
         $selectedLookup = array_flip($final);
-        $final = collect($final)->filter(function ($id) use ($selectedLookup) {
-            $parentId = Menu::query()->where('id', $id)->value('parent_id');
+
+        // 一次性取出所有候选菜单的 parent_id 映射，避免循环内逐条查询（菜单勾选量大时 N+1）
+        $parentMap = Menu::query()
+            ->whereIn('id', $final)
+            ->pluck('parent_id', 'id')
+            ->all();
+
+        $final = collect($final)->filter(function ($id) use ($selectedLookup, $parentMap) {
+            $parentId = $parentMap[$id] ?? null;
             if ($parentId !== null && ! isset($selectedLookup[$parentId])) {
                 return false;
             }

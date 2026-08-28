@@ -113,18 +113,48 @@ class WechatService
     }
 
     /**
-     * 获取微信接口 access_token（带简单缓存）。
+     * 获取微信接口 access_token（带简单缓存 + 防击穿锁）。
+     *
+     * 多 worker 并发时，若缓存同时失效会出现「惊群」——多个请求同时打向微信
+     * 换 token 接口。用 Cache::lock 保证同一时刻只有一个请求真正请求微信，
+     * 其余请求等待锁释放后直接读回写好的缓存。
      */
     protected function getAccessToken(string $appId, string $secret): string
     {
         $cacheKey = 'wechat_access_token_' . $appId;
+        $lockKey = 'wechat_access_token_lock_' . $appId;
 
-        // 尝试从缓存获取
+        // 尝试从缓存获取（命中直接返回，无需加锁）
         $token = cache()->get($cacheKey);
         if ($token) {
             return $token;
         }
 
+        // 未命中：争抢刷新锁，最多阻塞 5s 等待其他 worker 刷新完成
+        $lock = cache()->lock($lockKey, 5);
+        if (! $lock->block(5)) {
+            // 未能获取锁（极端超时）：退化为直接请求，保证可用
+            return $this->fetchAccessToken($appId, $secret);
+        }
+
+        try {
+            // 双重检查：获取锁后缓存可能已被其他 worker 写完
+            $token = cache()->get($cacheKey);
+            if ($token) {
+                return $token;
+            }
+
+            return $this->fetchAccessToken($appId, $secret);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * 真正请求微信换取 access_token 并写缓存（提前 5 分钟过期）。
+     */
+    protected function fetchAccessToken(string $appId, string $secret): string
+    {
         $response = Http::get('https://api.weixin.qq.com/cgi-bin/token', [
             'grant_type' => 'client_credential',
             'appid' => $appId,
@@ -145,7 +175,7 @@ class WechatService
         $expiresIn = $data['expires_in'] ?? 7200;
 
         // 缓存 token，提前 5 分钟过期
-        cache()->put($cacheKey, $token, $expiresIn - 300);
+        cache()->put('wechat_access_token_' . $appId, $token, $expiresIn - 300);
 
         return $token;
     }

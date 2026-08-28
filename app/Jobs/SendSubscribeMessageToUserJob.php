@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\AuditLog;
 use App\Models\SubscribeMessageFailure;
 use App\Services\WechatService;
+use App\Support\SubscribeMessageTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -154,13 +155,13 @@ class SendSubscribeMessageToUserJob implements ShouldQueue, ShouldBeUnique
         try {
             AuditLog::query()->create([
                 'type' => 'subscribe_message',
-                'module' => $this->resolveModule($this->subjectType),
+                'module' => SubscribeMessageTemplate::resolveModule($this->subjectType),
                 'action' => $this->scene . '_' . $action,
                 'description' => '单用户订阅消息推送（队列）',
                 'subject_type' => $this->subjectType,
                 'subject_id' => $this->subjectId,
                 'new_data' => array_merge($meta, [
-                    'openid' => $this->maskOpenid($this->openid),
+                    'openid' => SubscribeMessageTemplate::maskOpenid($this->openid),
                     'attempts' => $this->attempts(),
                 ]),
                 'user_id' => null,
@@ -221,20 +222,6 @@ class SendSubscribeMessageToUserJob implements ShouldQueue, ShouldBeUnique
      */
     protected function resolveModule(string $subjectType): string
     {
-        return match ($subjectType) {
-            \App\Models\Announcement::class => 'announcement',
-            \App\Models\Notification::class => 'notification',
-            \App\Models\Feedback::class => 'feedback',
-            default => 'subscribe_message',
-        };
-    }
-
-    protected function maskOpenid(string $openid): string
-    {
-        if (mb_strlen($openid) <= 6) {
-            return $openid;
-        }
-
-        return mb_substr($openid, 0, 4) . '***' . mb_substr($openid, -2);
+        return SubscribeMessageTemplate::resolveModule($subjectType);
     }
 }

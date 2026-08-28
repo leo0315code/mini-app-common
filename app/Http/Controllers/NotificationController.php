@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notification;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class NotificationController extends Controller
 {
@@ -38,15 +40,21 @@ class NotificationController extends Controller
             ];
         });
 
+        // 未读数与该用户可见范围一致，单条聚合查询（非 per-row 子查询，避免 N+1）
+        $unreadCount = DB::table('notification_user')
+            ->where('user_id', $user->id)
+            ->where('read', false)
+            ->whereIn('notification_id', function (QueryBuilder $q) {
+                $q->select('id')->from('notifications')->where('published', true);
+            })
+            ->count();
+
         return response()->json([
             'code' => 0,
             'message' => 'ok',
             'data' => [
                 'items' => $items,
-                'unread_count' => Notification::query()
-                    ->where('published', true)
-                    ->whereHas('recipients', fn ($q) => $q->where('user_id', $user->id)->where('read', false))
-                    ->count(),
+                'unread_count' => (int) $unreadCount,
                 'meta' => [
                     'current_page' => $notifications->currentPage(),
                     'last_page' => $notifications->lastPage(),
@@ -79,20 +87,22 @@ class NotificationController extends Controller
     }
 
     /**
-     * 小程序端：全部已读。
+     * 小程序端：全部已读（单条批量 UPDATE，避免逐条 updateExistingPivot 的 O(N) 写放大）。
      */
     public function markAllRead(Request $request): JsonResponse
     {
         $user = $request->user();
 
-        Notification::query()
-            ->where('published', true)
-            ->whereHas('recipients', fn ($q) => $q->where('user_id', $user->id)->where('read', false))
-            ->get()
-            ->each(fn (Notification $n) => $n->recipients()->updateExistingPivot($user->id, [
+        DB::table('notification_user')
+            ->where('user_id', $user->id)
+            ->where('read', false)
+            ->whereIn('notification_id', function (QueryBuilder $q) {
+                $q->select('id')->from('notifications')->where('published', true);
+            })
+            ->update([
                 'read' => true,
                 'read_at' => now(),
-            ]));
+            ]);
 
         return response()->json([
             'code' => 0,

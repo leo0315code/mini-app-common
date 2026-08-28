@@ -26,23 +26,37 @@ class ArticleViewCounter
      */
     public function pendingCounters(): array
     {
-        // keys() 返回带 laravel-database- 前缀的完整 key；get 需短 key
+        // 用 SCAN 游标迭代替代 KEYS：KEYS 在数据量大时会阻塞 Redis 单线程；
+        // SCAN 增量遍历，对生产实例无阻塞风险。
         $prefix = (string) (config('database.redis.options.prefix') ?? '');
+        $matchPrefix = $prefix . Article::VIEWS_COUNTER_PREFIX;
         $counters = [];
 
-        foreach (Redis::keys(Article::VIEWS_COUNTER_PREFIX.'*') as $key) {
-            if (! str_contains((string) $key, Article::VIEWS_COUNTER_PREFIX)) {
-                continue;
+        $cursor = 0;
+        do {
+            // Laravel PhpRedisConnection::scan 返回 [newCursor, [keys]]，游标归零且无结果时为 false
+            $result = Redis::scan($cursor, 'MATCH', $matchPrefix . '*', 'COUNT', 100);
+
+            if ($result === false) {
+                break;
             }
 
-            $shortKey = $prefix ? (string) substr((string) $key, strlen($prefix)) : (string) $key;
-            $articleId = (int) substr((string) strrchr($shortKey, ':'), 1);
-            $count = (int) Redis::get($shortKey);
+            [$cursor, $keys] = $result;
 
-            if ($count > 0) {
-                $counters[$articleId] = $count;
+            foreach ($keys as $key) {
+                $shortKey = $prefix ? (string) substr((string) $key, strlen($prefix)) : (string) $key;
+                if (! str_contains($shortKey, Article::VIEWS_COUNTER_PREFIX)) {
+                    continue;
+                }
+
+                $articleId = (int) substr((string) strrchr($shortKey, ':'), 1);
+                $count = (int) Redis::get($shortKey);
+
+                if ($count > 0) {
+                    $counters[$articleId] = $count;
+                }
             }
-        }
+        } while ($cursor !== 0);
 
         return $counters;
     }

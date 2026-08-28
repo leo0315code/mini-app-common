@@ -54,6 +54,14 @@ class Notification extends Model
     }
 
     /**
+     * 已读接收人（供 withCount('readRecipients') 复用，避免列表/导出 N+1）。
+     */
+    public function readRecipients(): BelongsToMany
+    {
+        return $this->recipients()->wherePivot('read', true);
+    }
+
+    /**
      * 发布后将通知按 scope 展开为接收人回执。
      */
     public function dispatchToRecipients(): void

@@ -9,6 +9,7 @@ use App\Models\Announcement;
 use App\Models\AuditLog;
 use App\Models\Feedback;
 use App\Models\Notification;
+use App\Support\SubscribeMessageTemplate;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -74,7 +75,7 @@ class SubscribeMessageService
 
                 $this->writeAudit('feedback_subscribe_queued', $feedback, [
                     'user_id' => $user->id,
-                    'openid_masked' => $this->maskOpenid($user->openid),
+                    'openid_masked' => SubscribeMessageTemplate::maskOpenid($user->openid),
                 ]);
             } catch (\Throwable $e) {
                 // dispatch 本身失败（比如队列连接异常），降级为同步尝试一次；
@@ -207,8 +208,8 @@ class SubscribeMessageService
                 Feedback::STATUS_PROCESSING => '处理中',
                 default => $feedback->status,
             };
-            $handleNote = mb_substr(strip_tags((string) $feedback->handle_note) ?: '（无处理备注）', 0, 20);
-            $feedbackContent = mb_substr(strip_tags((string) $feedback->content), 0, 20);
+            $handleNote = SubscribeMessageTemplate::truncate($feedback->handle_note ?: '（无处理备注）');
+            $feedbackContent = SubscribeMessageTemplate::truncate($feedback->content);
             $data = [
                 'thing1' => ['value' => $feedbackContent],
                 'phrase2' => ['value' => $statusText],
@@ -247,8 +248,8 @@ class SubscribeMessageService
                 Announcement::TYPE_UPDATE => '版本更新',
                 default => '公告',
             };
-            $title = mb_substr(strip_tags((string) $announcement->title), 0, 20);
-            $content = mb_substr(strip_tags((string) $announcement->content), 0, 20);
+            $title = SubscribeMessageTemplate::truncate($announcement->title);
+            $content = SubscribeMessageTemplate::truncate($announcement->content);
             $data = [
                 'thing1' => ['value' => $typeText],
                 'thing2' => ['value' => $title],
@@ -303,8 +304,8 @@ class SubscribeMessageService
                 $baseQuery->whereIn('id', $notification->targets ?? []);
             }
 
-            $title = mb_substr(strip_tags((string) $notification->title), 0, 20);
-            $body = mb_substr(strip_tags((string) $notification->body), 0, 20);
+            $title = SubscribeMessageTemplate::truncate($notification->title);
+            $body = SubscribeMessageTemplate::truncate($notification->body);
             $data = [
                 'thing1' => ['value' => '站内通知'],
                 'thing2' => ['value' => $title],
@@ -414,7 +415,7 @@ class SubscribeMessageService
         try {
             AuditLog::query()->create([
                 'type' => 'subscribe_message',
-                'module' => $this->resolveModule($model),
+                'module' => SubscribeMessageTemplate::resolveModule($model),
                 'action' => $action,
                 'description' => '微信订阅消息推送',
                 'subject_type' => $model::class,
@@ -427,24 +428,5 @@ class SubscribeMessageService
         } catch (\Throwable $e) {
             Log::warning('[订阅消息] 审计日志写入失败: ' . $e->getMessage());
         }
-    }
-
-    protected function resolveModule(object $model): string
-    {
-        return match (true) {
-            $model instanceof Feedback => 'feedback',
-            $model instanceof Announcement => 'announcement',
-            $model instanceof Notification => 'notification',
-            default => 'subscribe_message',
-        };
-    }
-
-    protected function maskOpenid(string $openid): string
-    {
-        if (mb_strlen($openid) <= 6) {
-            return $openid;
-        }
-
-        return mb_substr($openid, 0, 4) . '***' . mb_substr($openid, -2);
     }
 }
