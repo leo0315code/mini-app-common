@@ -38,7 +38,14 @@ class NotificationReadRateAndBatchTest extends TestCase
             $r3->id => ['read' => true, 'read_at' => $now],
         ]);
 
-        $notification->loadCount(['recipients', 'readRecipients']);
+        // 已读人数：infolist 直接用 recipients()->wherePivot('read', 1) 计算（生产路径）
+        $this->assertSame(2, (int) $notification->recipients()->wherePivot('read', 1)->count());
+
+        // 列表/导出用 recipients 别名计数 + pivot 表列限定（避免 wherePivot 在 withCount 子查询下被误编译）
+        $notification->loadCount([
+            'recipients',
+            'recipients as read_recipients_count' => fn ($q) => $q->where('notification_user.read', 1),
+        ]);
 
         $this->assertSame(3, (int) $notification->recipients_count);
         $this->assertSame(2, (int) $notification->read_recipients_count);

@@ -54,12 +54,9 @@ class Notification extends Model
     }
 
     /**
-     * 已读接收人（供 withCount('readRecipients') 复用，避免列表/导出 N+1）。
+     * 已读接收人数通过 recipients 关系别名计数获得（见 NotificationResource 的 read_recipients_count），
+     * 这里不再单独定义 wherePivot 关系，以免在 withCount 聚合子查询下被误编译为 `pivot`=read（MySQL 报未知列）。
      */
-    public function readRecipients(): BelongsToMany
-    {
-        return $this->recipients()->wherePivot('read', true);
-    }
 
     /**
      * 发布后将通知按 scope 展开为接收人回执。

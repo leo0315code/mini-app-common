@@ -160,9 +160,10 @@ class NotificationResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            // 「已读接收人数」用 recipients 关系别名计数 + 直接用 pivot 表限定列，
+            // 避免 wherePivot 在 withCount 聚合子查询下被误编译为 `pivot` = read（MySQL 报未知列、SQLite 宽松放行）。
             ->modifyQueryUsing(fn (Builder $query) => $query->withCount([
-                'recipients',
-                'readRecipients' => fn (Builder $q) => $q->wherePivot('read', true),
+                'recipients as read_recipients_count' => fn (Builder $q) => $q->where('notification_user.read', 1),
             ]))
             ->columns([
                 TextColumn::make('id')
@@ -277,7 +278,7 @@ class NotificationResource extends Resource
                 self::buildExportAllHeaderAction(
                     baseQuery: Notification::query()->with(['creator'])->withCount([
                         'recipients',
-                        'readRecipients',
+                        'recipients as read_recipients_count' => fn (Builder $q) => $q->where('notification_user.read', 1),
                     ]),
                     columnMap: [
                         'id' => 'ID',
@@ -337,7 +338,7 @@ class NotificationResource extends Resource
                         ],
                         label: '导出所选 CSV',
                         fileNamePrefix: 'notifications',
-                        withCount: ['recipients', 'readRecipients'],
+                        withCount: ['recipients', 'recipients as read_recipients_count' => fn (Builder $q) => $q->where('notification_user.read', 1)],
                         rowCallback: static fn (Notification $n): array => [
                             $n->id,
                             (string) $n->title,
