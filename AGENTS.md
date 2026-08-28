@@ -6,7 +6,8 @@ Laravel 13 / PHP 8.3 backend for "one admin backend, plug in any WeChat Mini Pro
 Authoritative (Chinese) docs live in `docs/` — read `docs/auth.md`, `docs/config.md`, `docs/structure.md`, `docs/testing.md` before touching related code.
 
 ## Commands
-- Run all tests: `php artisan test` (26 tests, in-memory SQLite via `phpunit.xml`, no DB/WeChat needed). Single file: `php artisan test tests/Feature/UserTest.php`; single test: `php artisan test --filter=test_login_success`.
+- Run all tests locally: `php artisan test`（本地默认用 `phpunit.xml` 的 in-memory SQLite 快速自测，当前约 180 项）。单文件：`php artisan test tests/Feature/UserTest.php`；单测试：`php artisan test --filter=test_login_success`。
+- **CI 只跑 MySQL**（生产即 MySQL）：GitHub Actions 在 `mysql:8.0` 服务上运行全部测试 + `php artisan db:check` 迁移同步校验。SQLite 宽松解析会掩盖 MySQL-only 的 SQL 编译问题（如 `wherePivot` 在 `withCount` 子查询下误编译为 `pivot` 列），因此不纳入 CI 矩阵。任何触碰 SQL / 迁移 / 关系计数的改动，务必用本地 MySQL 复现后再提交。
 - `composer test` runs `config:clear` first — do the same after editing config files.
 - Dev server: `php artisan serve` (admin at `/admin`). Frontend assets: `npm run build` (Vite; only needed for Filament admin styling).
 - Docker: `docker compose up -d --build` (app + nginx + mysql + redis, admin at `:8080/admin`). MySQL/Redis connections are overridden in `docker-compose.yml` via `MYSQL_*` vars — do not rely on the host `.env`'s `DB_*`.
